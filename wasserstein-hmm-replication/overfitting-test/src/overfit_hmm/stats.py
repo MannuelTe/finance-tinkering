@@ -52,7 +52,6 @@ def block_bootstrap_diff(
 def main() -> None:
     files = sorted((RESULTS / "multiseed").glob("seed_*.csv"))
     runs = {int(f.stem.split("_")[1]): pd.read_csv(f, index_col=0, parse_dates=True) for f in files}
-    seeds = sorted(runs)
     per_seed = pd.DataFrame({
         s: {
             "sharpe_base": sharpe(r.baseline_ret.to_numpy()),
@@ -82,6 +81,7 @@ def main() -> None:
     }
 
     # B. over the market sample: ensemble-average the seeds, then bootstrap days
+    base_idx = next(iter(runs.values())).index
     base = np.mean([r.baseline_ret.to_numpy() for r in runs.values()], axis=0)
     blocked = np.mean([r.blocked_ret.to_numpy() for r in runs.values()], axis=0)
     rng = np.random.default_rng(0)
@@ -97,9 +97,33 @@ def main() -> None:
     bootstrap = {"ensemble_sharpe_base": sharpe(base), "ensemble_sharpe_blocked": sharpe(blocked),
                  "point_diff": point, **boot}
 
+    # C. where the gain comes from: ensemble Sharpe by year, paired-over-seeds test by period
+    by_year = {}
+    for year in sorted(set(base_idx.year)):
+        mask = base_idx.year == year
+        by_year[str(year)] = {"baseline": sharpe(base[mask]), "blocked": sharpe(blocked[mask])}
+    by_period = {}
+    for name, (lo, hi) in {"2019_2022": (2019, 2022), "2023_2026": (2023, 2026)}.items():
+        diffs = np.array([
+            sharpe(r.blocked_ret[(r.index.year >= lo) & (r.index.year <= hi)].to_numpy())
+            - sharpe(r.baseline_ret[(r.index.year >= lo) & (r.index.year <= hi)].to_numpy())
+            for r in runs.values()
+        ])
+        by_period[name] = {
+            "mean_d_sharpe": float(diffs.mean()), "share_seeds_blocked_better": float((diffs > 0).mean()),
+            "paired_t": float(diffs.mean() / (diffs.std(ddof=1) / np.sqrt(len(diffs)))),
+        }
     summary = {
-        "per_seed_means": per_seed.drop(columns=[]).mean().to_dict(),
+        "per_seed_means": per_seed.mean().to_dict(),
+        "per_seed_extremes": {
+            "sharpe_base_min": float(per_seed.sharpe_base.min()),
+            "sharpe_base_max": float(per_seed.sharpe_base.max()),
+            "d_sharpe_min": float(d.min()), "d_sharpe_max": float(d.max()),
+        },
+        "sample": {"oos_start": str(base_idx[0].date()), "oos_end": str(base_idx[-1].date()),
+                   "oos_observations": len(base_idx)},
         "across_seeds": across, "market_bootstrap": bootstrap,
+        "by_year_ensemble_sharpe": by_year, "by_period_across_seeds": by_period,
     }
     (RESULTS / "multiseed_stats.json").write_text(json.dumps(summary, indent=2, default=float) + "\n")
     per_seed.to_csv(RESULTS / "multiseed_per_seed.csv", index_label="seed")
