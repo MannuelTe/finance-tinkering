@@ -200,7 +200,13 @@ The Sharpe difference is $`\Delta=\text{Sharpe}_{\text{blocked}}-\text{Sharpe}_{
 - **One configuration.** Blocks of 80 days, 3 random blocks, 60-day gap and 120-day minimum segment were set once. I did not test other settings, so the result may depend on them.
 - **Nothing here shows either method beats a passive portfolio in this period.** The question was only which validation scheme is better for choosing $`K`$.
 
-## 7. Paper
+## 7. MCP server
+
+The maths can be called by AI agents through a read-only MCP server (stdio and streamable HTTP), including Meta's Muse Code. See [`MCP.md`](MCP.md) for tools, setup and safety notes.
+
+Intended for small-business and finance questions in Zurich, Zug, Winterthur and the Lower Mainland of British Columbia; the maths itself is region-agnostic and governance questions are declined.
+
+## 8. Paper
 
 [`paper/overfitting_test.tex`](paper/overfitting_test.tex) (PDF: [`paper/overfitting_test.pdf`](paper/overfitting_test.pdf)) is the full write-up. Every number in it is generated from `results/*.json`, so re-running the study and then the generator keeps the paper consistent:
 

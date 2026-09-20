@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Blocked-validation overfitting test for the Wasserstein-HMM method."
 requires-python = ">=3.12"
 
+[project.optional-dependencies]
+mcp = ["mcp>=2.2,<3"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src", "../paper-replication/src"]

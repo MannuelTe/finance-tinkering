@@ -7,7 +7,7 @@ Pet projects around fintech, trading and quantitative research. Each folder is s
 |---|---|
 | [`tradebot-overnight/`](tradebot-overnight) | Multi-currency ETF portfolio bot (IBKR paper / in-memory sim) with a volatility-aware SPY close-to-open "overnight" sleeve, Streamlit dashboard, Postgres/Alembic state, and a LaTeX paper on the underlying maths. |
 | [`thesis-harness/`](thesis-harness) | Successor to the tradebot: turns a plain-text investment thesis into a LaTeX/PDF research paper with backtest, bootstrap uncertainty and figures (`thesispaper`), plus a generic `tradebot` toolkit. Includes example theses (volatility frontier, metals-hedged frontier). |
-| [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test using blocked validation. |
+| [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test using blocked validation, with a read-only MCP server (Muse Code compatible) for the HMM maths. |
 | [`ib-merger-model/`](ib-merger-model) | Investment-banking M&A pet project: three fictional banks, merger model (xlsx), Streamlit app, decision memo and glossary. |
 | [`beta-scanner/`](beta-scanner) | Beta of a stock vs SPY / RSP (equal-weight) and an S&P 500 mid-cap scanner for names where the two betas diverge; early notebooks. |
 | [`notes/`](notes) | Research notes (e.g. how to gauge the impact of the regime-investing paper). |
