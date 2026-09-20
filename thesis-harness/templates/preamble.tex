@@ -1,0 +1,24 @@
+% PURPOSE: shared LaTeX preamble for generated papers (plain TeX Live packages, tectonic-compatible).
+% NOTE: this file is \input verbatim; it is not passed through string.Template.
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,array}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\setlength{\headheight}{14pt}
+
+\definecolor{navy}{HTML}{17365D}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Var}{\mathrm{Var}}
+\newcommand{\Ind}{\mathbf{1}}
+\DeclareMathOperator{\se}{se}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Research note, not investment advice}
+\cfoot{\thepage}

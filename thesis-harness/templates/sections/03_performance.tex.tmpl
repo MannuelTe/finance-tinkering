@@ -1,0 +1,47 @@
+\section{Returns, wealth, and performance}\label{sec:performance}
+
+For a consistently adjusted price series \(P_t\), the one-period simple return is
+\begin{equation}
+  r_t=\frac{P_t}{P_{t-1}}-1,
+  \label{eq:simple-return}
+\end{equation}
+and the log return is
+\begin{equation}
+  \ell_t=\log\!\left(\frac{P_t}{P_{t-1}}\right)=\log(1+r_t).
+  \label{eq:log-return}
+\end{equation}
+Simple returns aggregate across simultaneously held assets; log returns add through time.
+
+Starting from wealth \(V_0\), compounded wealth after \(T\) returns is
+\begin{equation}
+  V_T=V_0\prod_{t=1}^{T}(1+r_t).
+  \label{eq:wealth}
+\end{equation}
+Total return and compound annual growth rate over \(Y\) calendar years are
+\begin{equation}
+  R_{\mathrm{tot}}=\frac{V_T}{V_0}-1,
+  \qquad
+  \mathrm{CAGR}=\left(1+R_{\mathrm{tot}}\right)^{1/Y}-1.
+  \label{eq:cagr}
+\end{equation}
+Using \(A=252\) sessions per year and a zero risk-free rate, annualised volatility and the Sharpe
+ratio are
+\begin{equation}
+  \widehat{\sigma}_{\mathrm{ann}}=\widehat{\sigma}_{r}\sqrt{A},
+  \qquad
+  \widehat{S}=\frac{\bar r}{\widehat{\sigma}_{r}}\sqrt{A}.
+  \label{eq:sharpe}
+\end{equation}
+For the rolling graph, \(\bar r\) and \(\widehat\sigma_r\) are recomputed over a trailing window
+using the sample standard deviation; the estimate is path-dependent and moves sharply when an
+extreme observation enters or leaves the window.
+
+Let \(M_t=\max_{0\le s\le t}V_s\) be the running high-water mark. Drawdown and maximum drawdown are
+\begin{equation}
+  D_t=\frac{V_t}{M_t}-1,
+  \qquad
+  D_{\max}=\min_{0\le t\le T}D_t.
+  \label{eq:drawdown}
+\end{equation}
+These summaries describe one realised path. They do not quantify parameter uncertainty, multiple
+testing, tail severity beyond the observed sample, or the probability of future loss.

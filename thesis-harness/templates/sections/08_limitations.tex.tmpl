@@ -1,0 +1,27 @@
+\section{Evidence and limitations}\label{sec:limitations}
+
+The figures show one realised path and are not evidence of dominance. The following caveats apply
+to every paper produced by this pipeline, whatever the numbers say.
+
+\begin{itemize}
+  \item \textbf{Sample length.} The sample has \NObs{} sessions (\StartDate{} to \EndDate{}). The
+  standard error of a Sharpe ratio estimated from \(T\) years of data is roughly \(\sqrt{(1+S^2/2)/T}\),
+  so short samples cannot distinguish skill from luck; see the interval
+  \([\SharpeCILow{},\ \SharpeCIHigh{}]\).
+  \item \textbf{Costs.} Costs are a proportional \CostBps{} basis points per unit of turnover.
+  Real costs include spreads that widen in stress, market impact, commissions, financing, and
+  taxes, none of which are modelled.
+  \item \textbf{Overfitting and multiple testing.} The thesis was formulated with knowledge of
+  history. Every parameter choice, ticker choice, and discarded variant increases the chance that
+  the best-looking result is noise. The bootstrap interval does not account for this selection.
+  \item \textbf{Model assumptions.} Gaussian and iid assumptions are working approximations.
+  Financial returns are heteroskedastic, skewed, and heavy-tailed.
+  \item \textbf{Data.} Adjusted closes are assumed correct and free of survivorship bias;
+  the risk-free rate is taken as zero, and rankings can change with other choices.
+  \item \textbf{No out-of-sample test.} Unless stated otherwise, no untouched holdout period was
+  reserved.
+\end{itemize}
+
+\noindent\textbf{This document is not investment advice.} It is an automatically generated
+research note; nothing in it has been validated for live capital, and past performance says little
+about future returns.

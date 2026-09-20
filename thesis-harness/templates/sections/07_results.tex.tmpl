@@ -1,0 +1,62 @@
+\section{Results}\label{sec:results}
+
+All values below are generated from the backtest output; none is typed by hand. The sample spans
+\NObs{} sessions from \StartDate{} to \EndDate{} with costs of \CostBps{} basis points.
+
+\begin{table}[H]
+\centering
+\caption{Performance summary (net of costs). The interval for the strategy Sharpe ratio is the
+stationary-bootstrap percentile interval of Equation~\eqref{eq:sharpe-ci}.}
+\label{tab:results}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & Strategy & Benchmark \\
+\midrule
+CAGR & \CAGR{} & \BenchCAGR{} \\
+Sharpe ratio & \Sharpe{} & \BenchSharpe{} \\
+Maximum drawdown & \MaxDD{} & \BenchMaxDD{} \\
+\midrule
+Total return & \TotalReturn{} & \\
+Annualised volatility & \Vol{} & \\
+Sharpe 95\% interval & \multicolumn{2}{r}{\([\SharpeCILow{},\ \SharpeCIHigh{}]\)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/fig_equity.pdf}
+\caption{Cumulative wealth of the strategy and its benchmark (Equation~\eqref{eq:wealth}).}
+\label{fig:equity}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/fig_drawdown.pdf}
+\caption{Drawdown from the running peak (Equation~\eqref{eq:drawdown}).}
+\label{fig:drawdown}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{figures/fig_rolling_sharpe.pdf}
+\caption{Rolling annualised Sharpe ratio (Equation~\eqref{eq:sharpe}). Adjacent windows overlap
+almost completely, so the path is descriptive rather than a sample of independent estimates.}
+\label{fig:rolling-sharpe}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\textwidth]{figures/fig_distribution.pdf}
+\caption{Distribution of daily strategy returns. Fat tails and skew, if visible, contradict the
+Gaussian working assumption of Equation~\eqref{eq:likelihood}.}
+\label{fig:distribution}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/fig_sensitivity.pdf}
+\caption{Sensitivity of performance to the transaction-cost assumption. A result that only
+survives at low cost is fragile.}
+\label{fig:sensitivity}
+\end{figure}

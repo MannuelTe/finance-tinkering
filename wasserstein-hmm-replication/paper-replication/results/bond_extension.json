@@ -1,0 +1,178 @@
+{
+  "bond_basket": [
+    "TLT",
+    "IEF",
+    "LQD",
+    "TIP"
+  ],
+  "variants": {
+    "tlt_only": {
+      "assets": [
+        "SPY",
+        "TLT",
+        "GLD",
+        "USO",
+        "UUP"
+      ],
+      "wasserstein_hmm": {
+        "total_return": 0.5317181744226742,
+        "sharpe": 1.5920933507837154,
+        "sortino": 2.3384785115117124,
+        "max_drawdown": -0.0935109477046242,
+        "annualized_return": 0.16281756789970647,
+        "annualized_volatility": 0.10226634501020858,
+        "turnover": 0.016551291338580458,
+        "turnover_q95": 0.0706551125897922
+      },
+      "wasserstein_hmm_net_5bps": {
+        "total_return": 0.5230995963017502,
+        "sharpe": 1.571596127261357,
+        "sortino": 2.3055392108583517,
+        "max_drawdown": -0.09397998481001801,
+        "annualized_return": 0.1607321051910453,
+        "annualized_volatility": 0.10227316191669103,
+        "turnover": 0.016551291338580458,
+        "turnover_q95": 0.0706551125897922
+      },
+      "knn": {
+        "total_return": 0.3366098941871216,
+        "sharpe": 0.7936113448813814,
+        "sortino": 1.02543569128156,
+        "max_drawdown": -0.13197981950667403,
+        "annualized_return": 0.11832345832484276,
+        "annualized_volatility": 0.14909496832171446,
+        "turnover": 0.4949165195503249,
+        "turnover_q95": 0.9999999999999998
+      },
+      "equal_weight": {
+        "total_return": 0.47978218741133705,
+        "sharpe": 1.675657544340277,
+        "sortino": 2.4840348296318453,
+        "max_drawdown": -0.07961641659529173,
+        "annualized_return": 0.14877731194117225,
+        "annualized_volatility": 0.0887874210596816
+      },
+      "average_weights_hmm": {
+        "SPY": 0.44576410527985977,
+        "TLT": 0.22805158364794886,
+        "GLD": 0.25078184951612525,
+        "USO": 0.024014740397590086,
+        "UUP": 0.05138772115847599
+      }
+    },
+    "bond_composite": {
+      "assets": [
+        "SPY",
+        "BONDS",
+        "GLD",
+        "USO",
+        "UUP"
+      ],
+      "wasserstein_hmm": {
+        "total_return": 0.5562658690075888,
+        "sharpe": 1.7885870147112835,
+        "sortino": 2.391654027590792,
+        "max_drawdown": -0.09557205364398891,
+        "annualized_return": 0.16787918971271357,
+        "annualized_volatility": 0.09386134883675923,
+        "turnover": 0.01429551653243913,
+        "turnover_q95": 0.07851647868438295
+      },
+      "wasserstein_hmm_net_5bps": {
+        "total_return": 0.548692900995648,
+        "sharpe": 1.7689398753636827,
+        "sortino": 2.364509924335549,
+        "max_drawdown": -0.09603961150828666,
+        "annualized_return": 0.16607795462962624,
+        "annualized_volatility": 0.09388558477459935,
+        "turnover": 0.01429551653243913,
+        "turnover_q95": 0.07851647868438295
+      },
+      "knn": {
+        "total_return": 0.47929065192460274,
+        "sharpe": 1.062505931511746,
+        "sortino": 1.3739625592589388,
+        "max_drawdown": -0.12760975027104504,
+        "annualized_return": 0.1553542170096079,
+        "annualized_volatility": 0.14621491739680748,
+        "turnover": 0.5059437954956304,
+        "turnover_q95": 0.9999999999999998
+      },
+      "equal_weight": {
+        "total_return": 0.5087835256740232,
+        "sharpe": 1.7947461675993281,
+        "sortino": 2.6139400881652555,
+        "max_drawdown": -0.07819550938417885,
+        "annualized_return": 0.15577928244145214,
+        "annualized_volatility": 0.08679738965528715
+      },
+      "average_weights_hmm": {
+        "SPY": 0.49923422446894344,
+        "BONDS": 0.18423546566333474,
+        "GLD": 0.14229975462426556,
+        "USO": 0.06845511145133767,
+        "UUP": 0.10577544379211856
+      }
+    },
+    "bond_separate": {
+      "assets": [
+        "SPY",
+        "TLT",
+        "IEF",
+        "LQD",
+        "TIP",
+        "GLD",
+        "USO",
+        "UUP"
+      ],
+      "wasserstein_hmm": {
+        "total_return": 0.5670460029824935,
+        "sharpe": 1.7746259345236286,
+        "sortino": 2.3246675960231924,
+        "max_drawdown": -0.0900500502734366,
+        "annualized_return": 0.17065714852118785,
+        "annualized_volatility": 0.09616513835463482,
+        "turnover": 0.01577441136688032,
+        "turnover_q95": 0.02216852195277203
+      },
+      "wasserstein_hmm_net_5bps": {
+        "total_return": 0.5586352536529404,
+        "sharpe": 1.7535338145091404,
+        "sortino": 2.2974449591101447,
+        "max_drawdown": -0.09025150988222974,
+        "annualized_return": 0.16866957268896096,
+        "annualized_volatility": 0.0961883776026161,
+        "turnover": 0.01577441136688032,
+        "turnover_q95": 0.02216852195277203
+      },
+      "knn": {
+        "total_return": 0.4096456543514546,
+        "sharpe": 0.9381250756653603,
+        "sortino": 1.2031352542410065,
+        "max_drawdown": -0.11280633564210696,
+        "annualized_return": 0.1376269176291676,
+        "annualized_volatility": 0.146704230810115,
+        "turnover": 0.5278595157484609,
+        "turnover_q95": 0.9999999999999998
+      },
+      "equal_weight": {
+        "total_return": 0.3373884525352515,
+        "sharpe": 1.6424601050063727,
+        "sortino": 2.478121243181685,
+        "max_drawdown": -0.056157371449322535,
+        "annualized_return": 0.10966747234519296,
+        "annualized_volatility": 0.06677025031592318
+      },
+      "average_weights_hmm": {
+        "SPY": 0.38457181478403474,
+        "TLT": 0.06346981381209732,
+        "IEF": 0.0009602707542695114,
+        "LQD": 4.264438509651375e-17,
+        "TIP": 0.005664513010723405,
+        "GLD": 0.16830181626744295,
+        "USO": 0.11477600145200383,
+        "UUP": 0.2622557699194281
+      }
+    }
+  }
+}

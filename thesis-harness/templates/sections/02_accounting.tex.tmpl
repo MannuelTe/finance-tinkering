@@ -1,0 +1,37 @@
+\section{Portfolio accounting}\label{sec:accounting}
+
+\subsection{Currency conversion}
+
+Let asset \(i\) be quoted in currency \(Q_i\) and let the account base currency be \(B\). If
+\(X_t^{B,Q_i}\) denotes units of \(Q_i\) per one unit of \(B\), a native price \(P_{i,t}^{Q_i}\) has
+base-currency value
+\begin{equation}
+  P_{i,t}^{B}=\frac{P_{i,t}^{Q_i}}{X_t^{B,Q_i}}.
+  \label{eq:fx}
+\end{equation}
+Equivalently, with a direct multiplier \(Y_t^{Q_i,B}=\left(X_t^{B,Q_i}\right)^{-1}\) in units of
+\(B\) per unit of \(Q_i\),
+\begin{equation}
+  P_{i,t}^{B}=P_{i,t}^{Q_i}\,Y_t^{Q_i,B}.
+  \label{eq:fx-direct}
+\end{equation}
+Forward-filling an FX series onto an asset's trading dates is an alignment convention, not an
+estimate of an unobserved intraday rate. When all assets share the base currency, both equations
+are the identity.
+
+\subsection{NAV and target weights}
+
+With cash \(C_t\), position quantity \(q_{i,t}\), and base-currency price \(P_{i,t}^{B}\), net asset
+value (NAV) is
+\begin{equation}
+  V_t=C_t+\sum_{i=1}^{m}q_{i,t}P_{i,t}^{B}.
+  \label{eq:nav}
+\end{equation}
+For target weights \(w_i\ge 0\) satisfying \(\sum_i w_i\le 1\), the ideal target quantity is
+\begin{equation}
+  q_{i,t}^{\star}=\frac{w_i V_t}{P_{i,t}^{B}}.
+  \label{eq:target-quantity}
+\end{equation}
+Equation~\eqref{eq:target-quantity} is the bridge between economic allocation and position size.
+Unallocated weight, \(1-\sum_i w_i\), remains in cash and earns zero. The backtest uses fractional
+quantities so that rounding does not obscure the mathematics.

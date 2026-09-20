@@ -1,0 +1,40 @@
+title: "Volatility-Gated Motion on a SPY/TLT Efficient Frontier"
+author: "Harness Research"
+slug: volatility_frontier
+summary: >
+  This research note tests a causal allocation rule that begins at a rolling mean-variance
+  growth optimum and moves along the estimated SPY/TLT efficient frontier. A five-session
+  volatility surprise determines direction, while the absolute growth gap versus a static
+  60/40 SPY/TLT reference determines amplitude. Sinusoidal, linear, and quadratic causal
+  interpolators are compared from January 2023 onward after proportional trading costs.
+data_source: yfinance
+universe: [SPY, TLT]
+benchmark: SPY
+start: "2023-01-01"
+end: null
+base_currency: USD
+costs_bps: 5.0
+rebalance: daily
+strategy:
+  module: strategy.py
+  params:
+    interpolation: sine
+    interpolation_days: 5
+    lookback: 126
+    min_history: 20
+    short_vol_days: 5
+    long_vol_days: 21
+    reference_spy_weight: 0.60
+    min_spy_weight: 0.05
+    max_spy_weight: 0.95
+    risk_aversion: 3.0
+    volatility_band: 0.50
+hypotheses:
+  - id: H1
+    statement: "The sinusoidally interpolated rule has a higher net Sharpe ratio than static 60/40 SPY/TLT."
+  - id: H2
+    statement: "A positive short-horizon volatility surprise reduces the strategy's frontier risk coordinate."
+  - id: H3
+    statement: "The ranking of sine, linear, and quadratic interpolation is not invariant to transaction costs."
+sections: []
+extra_sections: []

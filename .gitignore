@@ -1,0 +1,40 @@
+# Secrets / local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.claude/settings.local.json
+
+# Python envs, caches, builds
+.venv*
+venv/
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+build/
+dist/
+
+# Runtime state / broker data / scratch
+*.db
+*.sqlite*
+*.log
+tmp/
+pgdata/
+ibc/
+
+# LaTeX intermediates
+*.aux
+*.out
+*.xdv
+*.synctex.gz
+*.toc
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

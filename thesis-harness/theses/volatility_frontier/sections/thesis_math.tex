@@ -1,0 +1,160 @@
+\input{comparison_numbers.tex}
+
+\section{Thesis-specific model}\label{sec:thesis-math}
+
+The construction is a deliberately small two-asset implementation of the mean--variance idea in
+Markowitz (1952).  Let \(r_t=(r_{S,t},r_{T,t})^{\top}\) denote the adjusted-close returns of SPY
+and TLT.  At decision time \(t\), only returns through \(t\) are used.  With at most \(L=126\)
+observations, the rolling estimators are
+\begin{equation}\label{eq:tm-moments}
+ \widehat{\mu}_t=252\,\overline r_t,
+ \qquad
+ \widehat{\Sigma}_t=252\,\widehat{\operatorname{Cov}}_t(r)+\epsilon I,
+\end{equation}
+where the small ridge \(\epsilon I\) makes the numerical covariance positive definite without
+materially changing the frontier.
+
+For \(a\in[0.05,0.95]\), define the fully invested portfolio \(w(a)=(a,1-a)^{\top}\).  The
+long-only global minimum-variance point and the mean--variance growth anchor are
+\begin{equation}\label{eq:tm-anchor}
+ a_t^{\mathrm{gmv}}=\arg\min_a w(a)^{\top}\widehat\Sigma_t w(a),
+ \qquad
+ a_t^{\star}=\arg\max_{a\in\mathcal F_t}
+ \left\{w(a)^{\top}\widehat\mu_t-\frac{\gamma}{2}
+ w(a)^{\top}\widehat\Sigma_t w(a)\right\},
+\end{equation}
+with \(\gamma=3\).  The set \(\mathcal F_t\) is the estimated efficient segment from the GMV
+portfolio to the admissible endpoint having the higher estimated mean.  Because there are two
+assets, moving along this segment is equivalent to changing the SPY coordinate \(a\).
+
+The user's proposed ``risk-free'' 60/40 split is instead denoted
+\(b=(0.60,0.40)^{\top}\) and treated as a \emph{risky reference portfolio}.  Calling it risk-free
+would be mathematically incorrect: its return is stochastic and can be negative.  Over the latest
+five completed sessions, define its compound-return gap from the anchor as
+\begin{equation}\label{eq:tm-growth-gap}
+ d_t=\prod_{j=0}^{4}\left(1+w(a_t^{\star})^{\top}r_{t-j}\right)
+ -\prod_{j=0}^{4}\left(1+b^{\top}r_{t-j}\right).
+\end{equation}
+Thus the rule has exactly zero displacement when the two five-session growth rates agree.
+
+Let \(\widehat\sigma_{5,t}\) and \(\widehat\sigma_{21,t}\) be annualised sample volatilities of
+\(b^{\top}r\) over five and 21 sessions.  The signed raw frontier coordinate is
+\begin{equation}\label{eq:tm-coordinate}
+ q_t=\operatorname{clip}\!\left(
+ \frac{\widehat\sigma_{5,t}/\widehat\sigma_{21,t}-1}{0.50},-1,1\right)
+ \min\!\left\{\frac{|d_t|}{\widehat\sigma_{21,t}\sqrt{5/252}},1\right\}.
+\end{equation}
+Positive \(q_t\) means the recent volatility estimate has risen and therefore calls for less
+risk; negative \(q_t\) calls for more risk.  The absolute growth gap is a throttle, not a directional
+return forecast.
+
+For \(n=5\), the causal interpolated coordinate is
+\begin{equation}\label{eq:tm-interpolation}
+ \widetilde q_t^{(k)}=\sum_{j=1}^{n}\kappa_j^{(k)}q_{t-n+j},
+ \qquad
+ \kappa_j^{(k)}=\frac{h_k(j)}{\sum_{\ell=1}^{n}h_k(\ell)},
+\end{equation}
+where \(h_{\mathrm{sine}}(j)=\sin(\pi j/(2n))\),
+\(h_{\mathrm{linear}}(j)=j\), and \(h_{\mathrm{poly}}(j)=j^2\).  All three filters are one-sided;
+none uses a centred window or a future observation.  Finally, with \(a_t^{\mathrm{hi}}\) denoting
+the higher-risk endpoint of \(\mathcal F_t\),
+\begin{equation}\label{eq:tm-target}
+ a_{t+1}=\begin{cases}
+ a_t^{\star}+\widetilde q_t(a_t^{\mathrm{gmv}}-a_t^{\star}),
+   &\widetilde q_t\geq 0,\\
+ a_t^{\star}+(-\widetilde q_t)(a_t^{\mathrm{hi}}-a_t^{\star}),
+   &\widetilde q_t<0.
+ \end{cases}
+\end{equation}
+The target chosen at the close of \(t\) earns the return from \(t\) to \(t+1\), which is the
+no-lookahead convention enforced by the harness.
+
+\section{Interpolation comparison}\label{sec:interpolation-comparison}
+
+Table~\ref{tab:interpolations} reports all three filters on the same observations, parameters, and
+five-basis-point turnover charge.  Static 60/40 is included because it is the economic reference;
+SPY remains the generic harness benchmark in Table~\ref{tab:results}.
+
+\begin{table}[H]
+\centering
+\caption{Net performance by interpolation rule.}
+\label{tab:interpolations}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Rule & CAGR & Volatility & Sharpe & Max drawdown & Avg. turnover \\
+\midrule
+Sine & \SineCAGR{} & \SineVol{} & \SineSharpe{} & \SineMaxDD{} & \SineTurnover{} \\
+Linear & \LinearCAGR{} & \LinearVol{} & \LinearSharpe{} & \LinearMaxDD{} & \LinearTurnover{} \\
+Quadratic & \PolynomialCAGR{} & \PolynomialVol{} & \PolynomialSharpe{} & \PolynomialMaxDD{} & \PolynomialTurnover{} \\
+Static 60/40 & \StaticCAGR{} & \StaticVol{} & \StaticSharpe{} & \StaticMaxDD{} & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pre-registered outcomes are: H1 \textbf{\HOneResult{}}, H2
+\textbf{\HTwoResult{}}, and H3 \textbf{\HThreeResult{}}.  ``Supported'' describes only this
+historical path and is not a claim of population-level superiority.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/fig_interpolation_wealth.pdf}
+\caption{Cumulative wealth for the three interpolators, static 60/40, and SPY.}
+\label{fig:interpolation-wealth}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/fig_interpolation_weights.pdf}
+\caption{SPY target weights. Differences between filters are isolated to the five-session kernel.}
+\label{fig:interpolation-weights}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/fig_signal_diagnostics.pdf}
+\caption{Short- and long-window reference volatility (top) and raw versus sine-smoothed frontier
+coordinate (bottom). Positive coordinates de-risk.}
+\label{fig:signal-diagnostics}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig_latest_frontier.pdf}
+\caption{Latest estimated frontier, anchor, minimum-variance point, and sine target. This is a
+rolling estimate, not a stable structural frontier.}
+\label{fig:latest-frontier}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig_interpolation_costs.pdf}
+\caption{Net Sharpe ratios under alternative proportional cost assumptions.}
+\label{fig:interpolation-costs}
+\end{figure}
+
+\section{Trade and broker interpretation}\label{sec:broker-interpretation}
+
+The latest completed-session sine target, dated \LatestModelDate{}, is \LatestModelSPY{} SPY and
+\LatestModelTLT{} TLT; its smoothed coordinate is \LatestModelCoordinate{}.  These are model
+weights, not a recommendation or an executable order.  Exact share quantities depend on current
+IBKR paper-account NAV, positions, FX rates, and prices.  The supplied planner reads those values,
+sizes whole-share differences, marks every order \texttt{transmit=False}, and never calls the
+broker's placement method.  The full historical target changes are in
+\texttt{model\_trade\_ledger.csv}.
+
+Adjusted Yahoo closes are used for the performance study because they represent distributions and
+splits.  IBKR \texttt{TRADES} bars are execution prices rather than a total-return series; swapping
+them into this study would silently change the return definition.  IBKR is therefore used only for
+paper-account contract validation and order planning.
+
+\section{References}\label{sec:references}
+
+\begin{itemize}
+  \item H. Markowitz (1952), ``Portfolio Selection,'' \emph{Journal of Finance} 7(1), 77--91,
+  \href{https://doi.org/10.1111/j.1540-6261.1952.tb01525.x}{doi:10.1111/j.1540-6261.1952.tb01525.x}.
+  \item W. F. Sharpe (1994), ``The Sharpe Ratio,'' \emph{Journal of Portfolio Management} 21(1),
+  49--58, \href{https://web.stanford.edu/~wfsharpe/art/sr/sr.htm}{author-hosted version}.
+  \item D. N. Politis and J. P. Romano (1994), ``The Stationary Bootstrap,'' \emph{JASA} 89(428),
+  1303--1313,
+  \href{https://doi.org/10.1080/01621459.1994.10476870}{doi:10.1080/01621459.1994.10476870}.
+\end{itemize}

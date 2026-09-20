@@ -1,0 +1,593 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,longtable,tabularx,array}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\setlength{\headheight}{14pt}
+
+\definecolor{navy}{HTML}{17365D}
+\definecolor{slate}{HTML}{455A64}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\dd}{\,\mathrm{d}}
+\Urlmuskip=0mu plus 1mu
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Volatility-aware portfolio mathematics}
+\rhead{Vancouver, 2026}
+\cfoot{\thepage}
+
+\title{\textcolor{navy}{\textbf{Mathematical Anatomy of a Multi-Currency\\
+Portfolio and Volatility-Aware Overnight Strategy}}}
+\author{A visual mathematical note}
+\date{Vancouver, 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+This note gives a visual mathematical introduction to a constant-weight, multi-currency ETF
+portfolio with a volatility-aware SPY close-to-next-open sleeve. It develops currency conversion,
+portfolio returns, maximum-likelihood estimation, realized variance, fractional-Kelly-style
+sizing, performance measurement, microstructure statistics, and dependent-data bootstrap
+inference. Graphs are placed beside the concepts they illuminate, including cumulative wealth,
+rolling Sharpe ratios, drawdowns, volatility-conditioned decisions, sleeve contribution, and
+parameter sensitivity. A final numerical example amalgamates the methods. The historical figures
+describe one short research sample; they are not investment advice or evidence of future returns.
+\end{abstract}
+
+\tableofcontents
+
+\section{Research design}\label{sec:scope}
+
+The portfolio combines a 50\% thematic ETF sleeve with a 50\% SPY/TLT 60/40 sleeve, after moving
+5\% of total capital into EUR-hedged equivalents. SPY represents 27\% of total net asset value
+(NAV). That slice is either held from one close to the next open or left in cash according to a
+rolling return-and-volatility rule; all other holdings remain at their strategic weights.
+
+The saved research sample contains 730 common sessions from 1 September 2023 through
+17 September 2026. Prices are expressed in CAD, non-SPY holdings are rebalanced daily, and the
+overnight leg is charged a fixed two-basis-point round-trip cost. These assumptions are kept
+visible because they determine what the graphs can and cannot show.
+
+\section{A chapter-level study catalogue}\label{sec:catalogue}
+
+The ordering in Table~\ref{tab:reading} is a study path, not a claim that every chapter is required
+before reading the mathematics. It covers every method used by the strategy, while also marking
+where a book goes materially beyond the present model. Chapter names and numbering were
+checked against the publishers' online catalogues listed in the bibliography.
+
+\begin{longtable}{@{}L{0.065\textwidth}L{0.27\textwidth}L{0.25\textwidth}L{0.31\textwidth}@{}}
+\caption{Ordered reading catalogue mapped to the mathematical topics.}\label{tab:reading}\\
+\toprule
+Order & Book & Chapters & What to learn and where it appears here \\
+\midrule
+\endfirsthead
+\toprule
+Order & Book & Chapters & What to learn and where it appears here \\
+\midrule
+\endhead
+1 & Ruppert and Matteson, \emph{Statistics and Data Analysis for Financial Engineering} \cite{ruppert2015}
+& Ch.~2 ``Returns''; Ch.~5 ``Modeling Univariate Distributions''
+& Simple and log returns, compounding, sample moments, Gaussian likelihood, and the difference between an estimator and a model assumption. Read first for Equations~\eqref{eq:simple-return}--\eqref{eq:mle}. \\
+\addlinespace
+2 & Bacon, \emph{Practical Portfolio Performance Measurement and Attribution} \cite{bacon2023}
+& Ch.~3 ``The Mathematics of Portfolio Return''; Ch.~5 ``Risk''; App.~B ``Multi-Currency Attribution Methodology''
+& Wealth linking, annualization, risk-adjusted performance, drawdown context, and the accounting discipline needed for Equations~\eqref{eq:fx}--\eqref{eq:sharpe}. \\
+\addlinespace
+3 & Ruppert and Matteson \cite{ruppert2015}
+& Ch.~7 ``Multivariate Statistical Models''; Ch.~16 ``Portfolio Selection''; Ch.~17 ``The Capital Asset Pricing Model''; Ch.~19 ``Risk Management''
+& Covariance, correlation, beta, portfolio weights, and risk measurement. These quantities are used descriptively; the strategy does not solve a Markowitz optimization problem or estimate CAPM expected returns. \\
+\addlinespace
+4 & Degiannakis and Floros, \emph{Modelling and Forecasting High Frequency Financial Data} \cite{degiannakis2015}
+& Ch.~2 ``Intraday Realized Volatility Measures''; Ch.~3 ``Methods of Volatility Estimation and Forecasting''
+& High-frequency log returns and realized variance, corresponding to Equation~\eqref{eq:rv}. The repository scales partial-session realized variance but does not fit a volatility forecast. \\
+\addlinespace
+5 & Harris, \emph{Trading and Exchanges} \cite{harris2002}
+& Ch.~4 ``Orders and Order Properties''; Ch.~14 ``Bid/Ask Spreads''; Ch.~19 ``Liquidity''; Ch.~21 ``Liquidity and Transaction Cost Measurement''
+& MOC, market-on-open, and market orders; full quoted spreads; liquidity; and why a constant basis-point cost is only a first approximation. These chapters contextualize Equations~\eqref{eq:spread} and \eqref{eq:strategy-return}. \\
+\addlinespace
+6 & Davison and Hinkley, \emph{Bootstrap Methods and their Application} \cite{davison1997}
+& Ch.~2 ``The Basic Bootstraps''; Ch.~5 ``Confidence Intervals''; Ch.~8 ``Complex Dependence''
+& Resampling logic, percentile intervals, and dependence-preserving schemes. This is the basis for the circular moving-block procedure in Equation~\eqref{eq:block-bootstrap}. \\
+\addlinespace
+7 & L\'opez de Prado, \emph{Advances in Financial Machine Learning} \cite{lopez2018}
+& Ch.~2 ``Financial Data Structures''; Ch.~10 ``Bet Sizing''; Ch.~11 ``The Dangers of Backtesting''; Ch.~14 ``Backtest Statistics''; Ch.~19 ``Microstructural Features''
+& Bars, discretized exposure, look-ahead and selection hazards, drawdown/Sharpe diagnostics, and spread estimators. This is best read after the basic mathematics because its principal value here is methodological caution. \\
+\addlinespace
+8 & Ruppert and Matteson \cite{ruppert2015}
+& Ch.~12 ``Time Series Models: Basics''; Ch.~13 ``Time Series Models: Further Topics''; Ch.~14 ``GARCH Models''; Ch.~6 ``Resampling''
+& Extensions not used here: serial dependence, conditional volatility, diagnostics, and more formal resampling. These chapters define a sensible next research step. \\
+\bottomrule
+\end{longtable}
+
+\section{Portfolio accounting}\label{sec:portfolio}
+
+\subsection{Currency conversion}
+
+Let asset $i$ be quoted in currency $Q_i$ and let the account base currency be $B$. If
+$X_t^{B,Q_i}$ denotes units of $Q_i$ per one unit of $B$, a native price $P_{i,t}^{Q_i}$ has
+base-currency value
+\begin{equation}
+ P_{i,t}^{B}=\frac{P_{i,t}^{Q_i}}{X_t^{B,Q_i}}.
+ \label{eq:fx}
+\end{equation}
+For example, a USD price is divided by the quoted CADUSD rate when the base is CAD. Equivalently,
+one may use a direct multiplier $Y_t^{Q_i,B}$ measured in units of $B$ per unit of $Q_i$:
+\begin{equation}
+ P_{i,t}^{B}=P_{i,t}^{Q_i}Y_t^{Q_i,B}, \qquad
+ Y_t^{Q_i,B}=\left(X_t^{B,Q_i}\right)^{-1}.
+ \label{eq:fx-live}
+\end{equation}
+The two equations are identical after units are made explicit. Forward-filling an FX series onto
+an asset's trading dates is an alignment convention, not an estimate of an unobserved intraday
+rate. It avoids dropping a valid asset close merely because the calendars differ.
+
+\subsection{NAV and target weights}
+
+With cash $C_t$, position quantity $q_{i,t}$, and base-currency price $P_{i,t}^{B}$, NAV is
+\begin{equation}
+ V_t=C_t+\sum_{i=1}^{m}q_{i,t}P_{i,t}^{B}.
+ \label{eq:nav}
+\end{equation}
+For target weights $w_i\geq 0$ satisfying $\sum_i w_i\leq 1$, the ideal target quantity is
+\begin{equation}
+ q_{i,t}^{\star}=\frac{w_iV_t}{P_{i,t}^{B}}.
+ \label{eq:target-quantity}
+\end{equation}
+Equation~\eqref{eq:target-quantity} is the bridge between economic allocation and position size.
+Any unallocated weight remains cash. The historical results below use fractional quantities so
+that rounding does not obscure the portfolio mathematics.
+
+\section{Returns, wealth, and performance}\label{sec:performance}
+
+For a consistently adjusted price series $P_t$, the one-period simple return is
+\begin{equation}
+ r_t=\frac{P_t}{P_{t-1}}-1,
+ \label{eq:simple-return}
+\end{equation}
+and the log return is
+\begin{equation}
+ \ell_t=\log\!\left(\frac{P_t}{P_{t-1}}\right)=\log(1+r_t).
+ \label{eq:log-return}
+\end{equation}
+Simple returns aggregate naturally across simultaneously held assets; log returns add through
+time and are used by the intraday realized-variance calculation. Mixing adjusted closes with raw
+opens would create artificial overnight returns, so the overnight module explicitly requires
+consistent adjustment.
+
+Starting from wealth $V_0$, compounded wealth after $T$ returns is
+\begin{equation}
+ V_T=V_0\prod_{t=1}^{T}(1+r_t).
+ \label{eq:wealth}
+\end{equation}
+Total return and compound annual growth rate over $Y$ calendar years are
+\begin{equation}
+ R_{\mathrm{tot}}=\frac{V_T}{V_0}-1,
+ \qquad
+ \operatorname{CAGR}=\left(1+R_{\mathrm{tot}}\right)^{1/Y}-1.
+ \label{eq:cagr}
+\end{equation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{../graphics_paper/figures/fig1_equity.pdf}
+\caption{Cumulative value of the full portfolio and principal comparators. A logarithmic vertical
+scale makes equal proportional changes occupy equal distances.}
+\label{fig:equity}
+\end{figure}
+
+Using $A=252$ trading sessions per year and a zero risk-free rate, the annualized
+volatility and Sharpe ratio as
+\begin{equation}
+ \widehat{\sigma}_{\mathrm{ann}}=\widehat{\sigma}_{r}\sqrt{A},
+ \qquad
+ \widehat{S}=\frac{\bar r}{\widehat{\sigma}_{r}}\sqrt{A}.
+ \label{eq:sharpe}
+\end{equation}
+For the rolling graph, $\bar r$ and $\widehat\sigma_r$ are recomputed over the latest 126 sessions
+using the sample standard deviation. The rolling estimate is highly path-dependent and can change
+quickly when an extreme observation enters or leaves the window.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{../graphics_paper/figures/fig9_rolling_sharpe.pdf}
+\caption{Rolling 126-session annualized Sharpe ratios. The common rise and fall across strategies
+shows how strongly the statistic depends on the prevailing market window.}
+\label{fig:rolling-sharpe}
+\end{figure}
+
+For a paired comparison at session $t$, define
+\begin{equation}
+ \Delta \widehat S_t=widehat S_t^{\mathrm{vol\text{-}aware}}
+ -\widehat S_t^{\mathrm{SPY}}.
+ \label{eq:rolling-sharpe-difference}
+\end{equation}
+A positive value means that the volatility-aware portfolio had the larger Sharpe ratio over that
+particular trailing window. Because adjacent 126-session windows overlap almost completely, the
+histogram is a descriptive view of the path rather than a sample of independent observations.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.82\textwidth]{../graphics_paper/figures/fig10_sharpe_difference.pdf}
+\caption{Distribution of the paired rolling Sharpe difference in
+Equation~\eqref{eq:rolling-sharpe-difference}. Values to the right of zero favour the
+volatility-aware portfolio within the corresponding historical window.}
+\label{fig:sharpe-difference}
+\end{figure}
+
+Let $M_t=\max_{0\leq s\leq t}V_s$ be the running high-water mark. Drawdown and maximum drawdown
+are
+\begin{equation}
+ D_t=\frac{V_t}{M_t}-1,
+ \qquad
+ D_{\max}=\min_{0\leq t\leq T}D_t.
+ \label{eq:drawdown}
+\end{equation}
+These summaries describe one realized path. They do not quantify parameter uncertainty,
+multiple testing, tail severity beyond the observed sample, or the probability of future loss.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{../graphics_paper/figures/fig2_drawdown.pdf}
+\caption{Drawdown paths from each strategy's own previous peak.}
+\label{fig:drawdown}
+\end{figure}
+
+\section{The overnight signal}\label{sec:signal}
+
+\subsection{Return definitions and information timing}
+
+Let $O_t$ and $C_t$ denote the adjusted open and close of session $t$. The overnight and daily
+simple returns are
+\begin{equation}
+ r_t^{\mathrm{ON}}=\frac{O_t}{C_{t-1}}-1,
+ \qquad
+ r_t^{\mathrm{D}}=\frac{C_t}{C_{t-1}}-1.
+ \label{eq:overnight-daily}
+\end{equation}
+A decision submitted near the close of day $t-1$ cannot use $O_t$ or $C_t$. The backtest's slice
+at sale day $t$ estimates overnight moments from observations ending at $O_{t-1}$ and daily
+moments from closes ending at $C_{t-2}$. This explicit lag is the main protection against
+look-ahead bias in the signal calculation.
+
+\subsection{Local Gaussian maximum likelihood}
+
+For the most recent $n$ overnight observations $x_1,\ldots,x_n$, assume locally and only as a
+working approximation that $x_j\overset{\mathrm{iid}}{\sim}\mathcal N(\mu,\sigma^2)$. The
+Gaussian log-likelihood, up to an additive constant, is
+\begin{equation}
+ \mathcal L(\mu,\sigma^2)
+ =-\frac{n}{2}\log(\sigma^2)-\frac{1}{2\sigma^2}
+ \sum_{j=1}^{n}(x_j-\mu)^2.
+ \label{eq:likelihood}
+\end{equation}
+Maximization yields the estimators used here,
+\begin{equation}
+ \widehat{\mu}=\frac{1}{n}\sum_{j=1}^{n}x_j,
+ \qquad
+ \widehat{\sigma}_{\mathrm{ON}}^2
+ =\frac{1}{n}\sum_{j=1}^{n}(x_j-\widehat{\mu})^2.
+ \label{eq:mle}
+\end{equation}
+The divisor $n$ is the maximum-likelihood convention, not the unbiased sample-variance
+convention. The corresponding estimated standard error of the mean is
+\begin{equation}
+ \widehat{\operatorname{se}}(\widehat{\mu})
+ =\frac{\widehat{\sigma}_{\mathrm{ON}}}{\sqrt n}.
+ \label{eq:se}
+\end{equation}
+With all-in round-trip cost $c$ as a decimal return and user-selected $z\geq 0$, the entry
+condition is
+\begin{equation}
+ \widehat{\mu}-c>z\,
+ \frac{\widehat{\sigma}_{\mathrm{ON}}}{\sqrt n}.
+ \label{eq:entry-filter}
+\end{equation}
+At the default $z=0$, Equation~\eqref{eq:entry-filter} is merely a positive estimated-net-edge
+filter; it is not a significance test and provides no type-I error guarantee.
+
+\subsection{Realized intraday variance}
+
+Suppose completed intraday bars have closes $p_1,\ldots,p_K$ and $p_0$ is the session opening
+price. Form bar log returns $u_k=\log(p_k/p_{k-1})$. If $H$ is the full regular-session
+duration and $h$ is elapsed covered time, the partial-session realized variance is scaled as
+\begin{equation}
+ \widehat v_{t}^{\mathrm{ID}}
+ =\frac{H}{h}\sum_{k=1}^{K}u_k^2.
+ \label{eq:rv}
+\end{equation}
+Only bars completed by the decision time are allowed. Coverage below 90\% returns a missing value,
+and the trading rule skips the day rather than imputing risk. The linear $H/h$ scaling assumes
+variance accrues proportionally through time; the familiar U-shaped intraday volatility pattern
+makes this a practical approximation, not an identity.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.93\textwidth]{../graphics_paper/figures/fig4_decisions.pdf}
+\caption{The daily volatility reading, the resulting hold/skip decision, and the rolling share of
+days held. Missing intraday readings are omitted and therefore never generate a trade.}
+\label{fig:decisions}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\textwidth]{../graphics_paper/figures/fig5_vol_vs_overnight.pdf}
+\caption{Intraday volatility versus the following overnight return, shown as individual outcomes
+and volatility quintiles. The wide dispersion cautions against reading the filter as a return
+forecast.}
+\label{fig:vol-next-return}
+\end{figure}
+
+The sizing denominator is deliberately conservative:
+\begin{equation}
+ \widehat v_t=\max\left\{
+ \widehat{\sigma}_{\mathrm{ON}}^2,
+ \widehat{\sigma}_{\mathrm{D}}^2,
+ \widehat v_t^{\mathrm{ID}}
+ \right\}.
+ \label{eq:conservative-variance}
+\end{equation}
+It is important to interpret Equation~\eqref{eq:conservative-variance} correctly. It is not an
+MLE for a common variance. It is a hand-built upper envelope designed to reduce exposure when any
+one of three volatility readings is large.
+
+\subsection{Fractional-Kelly-style sizing and binary allocation}
+
+For a small risky return $R$ and fraction $f$ of wealth invested, a second-order approximation to
+expected log growth is
+\begin{equation}
+ \mathbb E[\log(1+fR)]
+ \approx f\,\mathbb E[R]-\frac{f^2}{2}\mathbb E[R^2].
+ \label{eq:log-growth}
+\end{equation}
+When the mean is small relative to volatility,
+$\mathbb E[R^2]\approx\operatorname{Var}(R)$, giving the familiar approximate optimizer
+\begin{equation}
+ f^{\star}\approx\frac{\mathbb E[R]}{\operatorname{Var}(R)}.
+ \label{eq:kelly-approx}
+\end{equation}
+The strategy uses this shape as a sizing heuristic, with fraction $\lambda=0.25$, cost $c$, variance
+from Equation~\eqref{eq:conservative-variance}, and cap $f_{\max}$:
+\begin{equation}
+ f_t^{\mathrm{raw}}=
+ \begin{cases}
+ \min\!\left(f_{\max},\lambda\dfrac{\widehat\mu-c}{\widehat v_t}\right),
+ & \text{if Equation~\eqref{eq:entry-filter} holds and }\widehat v_t>10^{-12},\\[6pt]
+ 0,&\text{otherwise.}
+ \end{cases}
+ \label{eq:raw-weight}
+\end{equation}
+This is ``Kelly-style,'' not an exact Kelly solution: return distributions are not established,
+parameters are estimated, the variance is an upper envelope, and the allocation rule is then
+discretized. In binary mode with threshold $f_{\min}$,
+\begin{equation}
+ f_t^{\mathrm{bin}}=f_{\max}
+ \mathbf 1\!\left\{f_t^{\mathrm{raw}}\geq f_{\min}\right\}.
+ \label{eq:binary-weight}
+\end{equation}
+Equation~\eqref{eq:binary-weight} applies only to the preassigned SPY sleeve; it does not lever the
+entire account by $f_t^{\mathrm{raw}}$.
+
+If the sleeve trades, its net return ending at the next open is
+\begin{equation}
+ r_{t}^{\mathrm{slice}}
+ =f_t^{\mathrm{bin}}\left(r_t^{\mathrm{ON}}-c\right).
+ \label{eq:strategy-return}
+\end{equation}
+If $r_t^{\mathrm{rest}}$ is the whole-account return contributed by all non-SPY target weights,
+including idle cash, and $w_{\mathrm{SPY}}=0.27$, total return is
+\begin{equation}
+ r_t^{\mathrm{total}}
+ =r_t^{\mathrm{rest}}+w_{\mathrm{SPY}}r_t^{\mathrm{slice}}.
+ \label{eq:combined-return}
+\end{equation}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{../graphics_paper/figures/fig3_slice_contribution.pdf}
+\caption{Cumulative contribution of the alternative overnight rules relative to leaving the SPY
+slice in cash. This isolates the sleeve from the rest of the strategic portfolio.}
+\label{fig:slice-contribution}
+\end{figure}
+
+\section{Microstructure screen and dependent-data uncertainty}\label{sec:screen}
+
+For synchronized best bid $b_{i,t}$ and ask $a_{i,t}$, the full quoted spread in basis points is
+\begin{equation}
+ s_{i,t}=10^4\frac{a_{i,t}-b_{i,t}}{(a_{i,t}+b_{i,t})/2}.
+ \label{eq:spread}
+\end{equation}
+The screen compares a candidate $i$ with SPY using paired overnight returns. Its descriptive
+market beta and correlation are
+\begin{equation}
+ \widehat\beta_i=
+ \frac{\widehat{\operatorname{Cov}}(r_i,r_{\mathrm{SPY}})}
+ {\widehat{\operatorname{Var}}(r_{\mathrm{SPY}})},
+ \qquad
+ \widehat\rho_i=
+ \frac{\widehat{\operatorname{Cov}}(r_i,r_{\mathrm{SPY}})}
+ {\widehat\sigma_i\widehat\sigma_{\mathrm{SPY}}}.
+ \label{eq:beta-corr}
+\end{equation}
+Let $\delta_d=\bar s_{\mathrm{SPY},d}-\bar s_{i,d}$ be the daily paired spread saving. Because
+adjacent days may be dependent, the screen resamples circular blocks of length $L=5$. With a random
+start $J_k$ on a circle of $n$ days, bootstrap replication $b$ uses the index sequence
+\begin{equation}
+ I_b=\left((J_1+0{:}L-1)\bmod n,\ldots,
+ (J_K+0{:}L-1)\bmod n\right)_{1:n}
+ \label{eq:block-bootstrap}
+\end{equation}
+and computes $\bar\delta_b^{\star}=n^{-1}\sum_{j\in I_b}\delta_j$. The 2.5\% and 97.5\%
+empirical quantiles of 3,000 replications form a percentile interval. A candidate qualifies only
+if beta and correlation thresholds pass and the lower interval endpoint exceeds the required raw
+spread saving. The interval is exploratory: this construction does not correct for screening many
+candidates, optimize block length, or account for quote-selection error.
+
+\section{An amalgamation example}\label{sec:example}
+
+This example uses round numbers to join the portfolio, signal, volatility, and return equations.
+It is illustrative rather than a reconstruction of any account or a trading recommendation.
+
+Assume NAV is CAD~250,000 and the target SPY sleeve is 27\%. Its capital budget is
+\begin{equation}
+ B_{\mathrm{SPY}}=0.27\times 250{,}000=\text{CAD }67{,}500.
+ \label{eq:example-budget}
+\end{equation}
+Suppose SPY is USD~690 and the direct rate is 1.43 CAD per USD. By
+Equation~\eqref{eq:fx-live}, the base-currency price is
+\begin{equation}
+ P_{\mathrm{SPY}}^{\mathrm{CAD}}=690\times1.43
+ =\text{CAD }986.70.
+ \label{eq:example-fx}
+\end{equation}
+
+Now take a 60-session window with estimated mean overnight return
+$\widehat\mu=0.00050$, all-in cost $c=0.00020$, overnight volatility 0.50\%, daily volatility
+1.20\%, and scaled intraday volatility 0.90\%. The conservative variance is
+\begin{equation}
+ \widehat v=\max\{0.005^2,0.012^2,0.009^2\}=0.000144.
+ \label{eq:example-variance}
+\end{equation}
+With $z=0$, the estimated net edge $0.00030$ passes
+Equation~\eqref{eq:entry-filter}. Quarter sizing gives
+\begin{equation}
+ f^{\mathrm{raw}}=\min\!\left(1,
+ 0.25\frac{0.00050-0.00020}{0.000144}\right)
+ =0.5208.
+ \label{eq:example-raw}
+\end{equation}
+Because $0.5208\geq f_{\min}=0.5$, binary mode sets $f^{\mathrm{bin}}=1$ and allocates the whole
+sleeve. If the intraday volatility had instead been 1.40\%, then
+$\widehat v=0.014^2=0.000196$ and $f^{\mathrm{raw}}=0.3827$; the same estimated mean would be
+skipped. This is the precise sense in which the rule is volatility-aware.
+
+Assume the next overnight return is 0.40\% and the non-SPY holdings contribute 0.15\% to
+whole-portfolio return. Equations~\eqref{eq:strategy-return} and
+\eqref{eq:combined-return} give
+\begin{equation}
+ r^{\mathrm{slice}}=1(0.0040-0.0002)=0.0038,
+ \qquad
+ r^{\mathrm{total}}=0.0015+0.27(0.0038)=0.002526.
+ \label{eq:example-return}
+\end{equation}
+Thus the illustrative whole portfolio gains 25.26 basis points under the stated accounting model.
+
+\section{Evidence and limitations}\label{sec:limitations}
+
+Figures~\ref{fig:equity}--\ref{fig:drawdown} show a transformation of exposure and risk, not
+evidence of dominance. In this sample, continuously holding the blended portfolio ends above the
+volatility-aware variant, while SPY has both the largest terminal value and the deepest drawdown.
+Figure~\ref{fig:rolling-sharpe} also shows that risk-adjusted rankings vary substantially through
+time and depend on the chosen 126-session window.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.92\textwidth]{../graphics_paper/figures/fig7_sensitivity.pdf}
+\caption{Sensitivity of the volatility-aware strategy to the binary allocation threshold.}
+\label{fig:sensitivity}
+\end{figure}
+
+The principal limitations are:
+
+\begin{itemize}
+ \item The sample is short, begins in a rising-market regime, and was viewed while the rule was
+ designed; it is not an untouched out-of-sample test.
+ \item The accounting omits slippage, commissions, taxes, financing, market impact, and auction
+ uncertainty.
+ \item The local IID Gaussian assumption is a working estimator, not a proven model of data
+ generation. Financial returns may be dependent, heteroskedastic, skewed, and heavy-tailed.
+ \item Sensitivity plots reveal parameter dependence but are not a substitute for out-of-sample
+ validation.
+ \item The overnight return is computed in USD while the total portfolio is reported in CAD, so
+ overnight FX movement in the SPY leg is omitted.
+ \item The partial-day variance scaler ignores deterministic intraday seasonality and
+ microstructure noise. A volatility model or seasonality adjustment would be a distinct method,
+ not a cosmetic change.
+ \item The screen's percentile interval is not corrected for multiple candidate searches. Beta
+ similarity does not make two ETFs economically interchangeable.
+ \item Sharpe ratios use a zero risk-free rate; different risk-free assumptions and annualization
+ windows can change their values and rankings.
+\end{itemize}
+
+A disciplined next study would freeze parameters, add explicit turnover and cost accounting,
+validate the FX leg, reserve a genuinely untouched test period, and report uncertainty across
+regimes.
+
+\section*{Conclusion}
+
+The strategy forms a coherent mathematical chain: consistent prices produce returns; returns
+produce local mean and volatility estimates; a cost-adjusted, variance-scaled rule controls a
+preallocated sleeve; and compounded returns produce familiar performance summaries. The graphs
+make the consequences visible. In particular, the conservative maximum variance, binary
+threshold, fixed cost, and historical sample are design choices rather than consequences of
+financial theory. Labelling them explicitly is the most important mathematical safeguard.
+
+\begin{thebibliography}{9}
+
+\bibitem{ruppert2015}
+David Ruppert and David S. Matteson.
+\newblock \emph{Statistics and Data Analysis for Financial Engineering: with R Examples}, 2nd ed.
+\newblock Springer, 2015.
+\newblock Publisher catalogue and chapter list:
+\url{https://link.springer.com/book/10.1007/978-1-4939-2614-5}.
+
+\bibitem{bacon2023}
+Carl R. Bacon.
+\newblock \emph{Practical Portfolio Performance Measurement and Attribution}, 3rd ed.
+\newblock Wiley, 2023.
+\newblock Publisher catalogue and chapter list:
+\url{https://onlinelibrary.wiley.com/doi/book/10.1002/9781119831976}.
+
+\bibitem{degiannakis2015}
+Stavros Degiannakis and Christos Floros.
+\newblock \emph{Modelling and Forecasting High Frequency Financial Data}.
+\newblock Palgrave Macmillan, 2015.
+\newblock Publisher catalogue and chapter list:
+\url{https://link.springer.com/book/10.1057/9781137396495}.
+
+\bibitem{harris2002}
+Larry Harris.
+\newblock \emph{Trading and Exchanges: Market Microstructure for Practitioners}.
+\newblock Oxford University Press, 2002.
+\newblock Publisher catalogue and chapter list:
+\url{https://academic.oup.com/book/52292}.
+
+\bibitem{davison1997}
+A. C. Davison and D. V. Hinkley.
+\newblock \emph{Bootstrap Methods and their Application}.
+\newblock Cambridge University Press, 1997.
+\newblock Publisher catalogue and chapter list:
+\url{https://doi.org/10.1017/CBO9780511802843}.
+
+\bibitem{lopez2018}
+Marcos L\'opez de Prado.
+\newblock \emph{Advances in Financial Machine Learning}.
+\newblock Wiley, 2018.
+\newblock Publisher table of contents:
+\url{https://catalogimages.wiley.com/images/db/pdf/9781119482086.toc.pdf}.
+
+\bibitem{kelly1956}
+John L. Kelly, Jr.
+\newblock A new interpretation of information rate.
+\newblock \emph{Bell System Technical Journal}, 35(4):917--926, 1956.
+\newblock \url{https://doi.org/10.1002/j.1538-7305.1956.tb03809.x}.
+
+\end{thebibliography}
+
+\vfill
+\begin{center}
+\footnotesize\color{slate}
+\rule{0.78\textwidth}{0.4pt}\\[0.6em]
+\textbf{AI disclaimer.} This paper was tool-assisted through AI; the ideas, strategy choices,
+and responsibility for their use are human. Vancouver, 2026.
+\end{center}
+
+\end{document}

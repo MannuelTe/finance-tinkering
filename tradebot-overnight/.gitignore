@@ -1,0 +1,51 @@
+# Secrets and local configuration. Keep only the redacted template.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Python environments, caches, builds, and coverage.
+.venv*
+__pycache__/
+*.py[cod]
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# Runtime state and broker/database data.
+data/
+ibc/
+pgdata/
+*.db
+*.sqlite*
+*.log
+
+# Research source data can contain licensed broker data. Derived figures are kept.
+graphics_paper/data/
+
+# LaTeX intermediates. The final PDF under output/pdf is kept.
+paper/*.aux
+paper/*.bbl
+paper/*.bcf
+paper/*.blg
+paper/*.fdb_latexmk
+paper/*.fls
+paper/*.log
+paper/*.out
+paper/*.run.xml
+paper/*.synctex.gz
+paper/*.toc
+tmp/
+
+# Operating-system and editor noise.
+.DS_Store
+.idea/
+.vscode/

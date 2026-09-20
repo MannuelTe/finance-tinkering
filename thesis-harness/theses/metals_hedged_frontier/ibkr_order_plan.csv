@@ -1,0 +1,5 @@
+as_of,symbol,side,quantity,reference_price_base,target_weight,transmit,account
+2026-09-18,SPY,BUY,74.0,761.6900024414062,0.57,False,offline-model
+2026-09-18,TLT,BUY,467.0,81.25,0.38,False,offline-model
+2026-09-18,SLV,BUY,25.0,59.93000030517578,0.015000000000000003,False,offline-model
+2026-09-18,GLD,BUY,8.0,401.1700134277344,0.034999999999999996,False,offline-model

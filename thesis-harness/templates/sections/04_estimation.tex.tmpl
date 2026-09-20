@@ -1,0 +1,54 @@
+\section{Estimation and uncertainty}\label{sec:estimation}
+
+\subsection{Gaussian maximum likelihood}
+
+For returns \(x_1,\ldots,x_n\), assume as a working approximation that
+\(x_j\overset{\mathrm{iid}}{\sim}\mathcal N(\mu,\sigma^2)\). The log-likelihood, up to an additive
+constant, is
+\begin{equation}
+  \mathcal L(\mu,\sigma^2)
+  =-\frac{n}{2}\log(\sigma^2)-\frac{1}{2\sigma^2}\sum_{j=1}^{n}(x_j-\mu)^2.
+  \label{eq:likelihood}
+\end{equation}
+Maximisation yields
+\begin{equation}
+  \widehat{\mu}=\frac{1}{n}\sum_{j=1}^{n}x_j,
+  \qquad
+  \widehat{\sigma}^2=\frac{1}{n}\sum_{j=1}^{n}(x_j-\widehat{\mu})^2.
+  \label{eq:mle}
+\end{equation}
+The divisor \(n\) is the maximum-likelihood convention, not the unbiased one. The estimated
+standard error of the mean is
+\begin{equation}
+  \widehat{\se}(\widehat{\mu})=\frac{\widehat{\sigma}}{\sqrt n}.
+  \label{eq:se}
+\end{equation}
+For the daily strategy returns of this study, \(\widehat\mu=\MuDaily{}\), \(\widehat\sigma^2=\VarDaily{}\)
+and \(\widehat\se(\widehat\mu)=\MuDailySE{}\).
+An estimated edge is only interesting relative to this error: the statistic
+\(\widehat\mu/\widehat\se(\widehat\mu)\) is a \(t\)-type ratio, not a significance test, because
+returns are neither established as Gaussian nor as independent.
+
+\subsection{Stationary bootstrap for the Sharpe ratio}
+
+Daily returns are serially dependent enough that the iid interval is unreliable. The stationary
+bootstrap of Politis and Romano resamples blocks with geometric random length. With mean block
+length \(1/p\), define the index sequence recursively: \(I_1\) is uniform on \(\{1,\ldots,n\}\), and
+\begin{equation}
+  I_{k+1}=
+  \begin{cases}
+    (I_k \bmod n)+1, & \text{with probability } 1-p,\\
+    \text{uniform on }\{1,\ldots,n\}, & \text{with probability } p.
+  \end{cases}
+  \label{eq:stationary-bootstrap}
+\end{equation}
+For replication \(b=1,\ldots,B\) (here \(B=\NBoot{}\)), form \(x^{\star b}_k=x_{I_k}\) for \(k=1,\ldots,n\) and compute
+\(\widehat S^{\star b}\) from Equation~\eqref{eq:sharpe}. The percentile interval for the Sharpe ratio is
+\begin{equation}
+  \left[\,\widehat S^{\star}_{(\alpha/2)},\ \widehat S^{\star}_{(1-\alpha/2)}\,\right],
+  \label{eq:sharpe-ci}
+\end{equation}
+the empirical \(\alpha/2\) and \(1-\alpha/2\) quantiles of the replications. For this study the
+interval is \([\SharpeCILow{},\ \SharpeCIHigh{}]\) around the point estimate \Sharpe{}. The interval
+captures sampling noise under the resampling assumptions only; it does not correct for choosing the
+strategy after seeing data.

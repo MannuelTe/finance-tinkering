@@ -1,0 +1,75 @@
+services:
+  gateway:
+    image: ghcr.io/gnzsnz/ib-gateway:stable   # IB Gateway + IBC baked in
+    restart: unless-stopped
+    environment:
+      TWS_USERID: ${IB_USER}
+      TWS_PASSWORD: ${IB_PASSWORD}
+      TRADING_MODE: ${IB_MODE:-paper}         # paper | live
+      READ_ONLY_API: "no"
+      TWOFA_TIMEOUT_ACTION: restart
+      AUTO_RESTART_TIME: "11:45 PM"
+      VNC_SERVER_PASSWORD: ${VNC_SERVER_PASSWORD:-}   # empty = VNC off; set only to debug/enter a 2FA code
+    ports:
+      - "127.0.0.1:4001:4003"                 # live
+      - "127.0.0.1:4002:4004"                 # paper
+      - "127.0.0.1:5900:5900"                 # VNC (only listens when VNC_SERVER_PASSWORD is set)
+    volumes:
+      - ibgateway_jts:/home/ibgateway/Jts     # image runs as user 1000, settings live here
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: tradebot
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  app:
+    build: {context: ., dockerfile: docker/app.Dockerfile}
+    restart: unless-stopped
+    depends_on: [gateway, db]
+    env_file: .env
+    environment:
+      IB_HOST: gateway
+      # Inside the compose network the API is only reachable through the image's socat relay:
+      # 4004 = paper, 4003 = live (the raw 4002/4001 API ports listen on the container's loopback).
+      IB_PORT: 4004
+      DATABASE_URL: postgresql://postgres:${PG_PASSWORD}@db:5432/tradebot
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN}
+      MAX_NOTIONAL: ${MAX_NOTIONAL:-500}
+      BASE_CURRENCY: CAD
+    volumes:
+      - ./data:/data                          # parquet store
+
+  overnight:
+    build: {context: ., dockerfile: docker/app.Dockerfile}
+    command: python -m tradebot.execution.overnight_runner
+    restart: unless-stopped
+    depends_on: [gateway, db]
+    env_file: .env
+    environment:
+      IB_HOST: gateway
+      IB_PORT: 4004                           # socat relay to the paper API (see app service)
+      IB_CLIENT_ID: 1                         # the runner adds 10 for its own IBKR client id
+      DATABASE_URL: postgresql://postgres:${PG_PASSWORD}@db:5432/tradebot
+      MAX_NOTIONAL: ${MAX_NOTIONAL:-500}
+      BASE_CURRENCY: CAD
+      OVERNIGHT_MIN_WEIGHT: ${OVERNIGHT_MIN_WEIGHT:-0.5}
+
+  dashboard:
+    build: {context: ., dockerfile: docker/app.Dockerfile}
+    command: streamlit run dashboard/app.py --server.port 8501
+    restart: unless-stopped
+    ports: ["127.0.0.1:8501:8501"]
+    depends_on: [db]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://postgres:${PG_PASSWORD}@db:5432/tradebot
+    volumes:
+      - ./data:/data
+
+volumes:
+  pgdata:
+  ibgateway_jts:

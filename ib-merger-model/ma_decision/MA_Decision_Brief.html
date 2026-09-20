@@ -1,0 +1,819 @@
+<title>M&A Decision Brief — Northfield vs Harborview</title>
+<style>
+/* ============================ TOKENS — light is the bare :root ============================ */
+:root {
+  color-scheme: light;
+
+  --plane:        #f3f6f9;
+  --surface:      #ffffff;
+  --surface-2:    #eef2f6;
+  --ink:          #0f1418;
+  --ink-2:        #48545f;
+  --muted:        #78848f;
+  --hairline:     #dee5eb;
+  --rule:         #c3ced8;
+  --grid:         #e8edf2;
+
+  --series-b:     #eb6834;   /* Northfield Card Bank  (categorical slot 2) */
+  --series-c:     #2a78d6;   /* Harborview Community  (categorical slot 1) */
+  --series-b-soft: rgba(235,104,52,0.13);
+  --series-c-soft: rgba(42,120,214,0.13);
+
+  --good:         #0ca30c;
+  --warning:      #fab219;
+  --critical:     #d03b3b;
+  --good-ink:     #056b05;
+  --critical-ink: #a52a2a;
+
+  --shadow: 0 1px 2px rgba(15,20,24,.05), 0 8px 24px -12px rgba(15,20,24,.14);
+
+  --serif: ui-serif, Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans:  ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --plane:      #0b0e12;
+    --surface:    #151a20;
+    --surface-2:  #1c232b;
+    --ink:        #eef2f6;
+    --ink-2:      #a9b5c1;
+    --muted:      #7c8794;
+    --hairline:   #262f39;
+    --rule:       #38434f;
+    --grid:       #222a33;
+    --series-b:   #d95926;
+    --series-c:   #3987e5;
+    --series-b-soft: rgba(217,89,38,0.18);
+    --series-c-soft: rgba(57,135,229,0.18);
+    --good-ink:     #35c035;
+    --critical-ink: #ef7676;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --plane:      #0b0e12;
+  --surface:    #151a20;
+  --surface-2:  #1c232b;
+  --ink:        #eef2f6;
+  --ink-2:      #a9b5c1;
+  --muted:      #7c8794;
+  --hairline:   #262f39;
+  --rule:       #38434f;
+  --grid:       #222a33;
+  --series-b:   #d95926;
+  --series-c:   #3987e5;
+  --series-b-soft: rgba(217,89,38,0.18);
+  --series-c-soft: rgba(57,135,229,0.18);
+  --good-ink:     #35c035;
+  --critical-ink: #ef7676;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+
+/* ============================ BASE ============================ */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--plane);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1120px; margin: 0 auto; padding: 28px 22px 64px; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+p { margin: 0; }
+:focus-visible { outline: 2px solid var(--series-c); outline-offset: 2px; border-radius: 3px; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+.eyebrow {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+  color: var(--muted); margin: 0;
+}
+
+/* ============================ MASTHEAD ============================ */
+.masthead { border-bottom: 2px solid var(--ink); padding-bottom: 14px; margin-bottom: 12px; }
+.masthead .top {
+  display: flex; flex-wrap: wrap; gap: 10px 20px;
+  align-items: baseline; justify-content: space-between; margin-bottom: 10px;
+}
+.masthead h1 { font-size: clamp(26px, 4.2vw, 40px); line-height: 1.1; }
+.masthead .sub { color: var(--ink-2); font-size: 15px; max-width: 68ch; margin-top: 8px; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 11.5px; color: var(--muted); }
+.meta b { color: var(--ink-2); font-weight: 600; }
+
+.disclaimer {
+  border: 1px solid var(--critical); border-left-width: 4px;
+  background: color-mix(in srgb, var(--critical) 7%, var(--surface));
+  color: var(--critical-ink);
+  padding: 9px 14px; font-size: 12px; line-height: 1.5; margin: 14px 0 22px;
+  max-width: 105ch;
+}
+.disclaimer b { letter-spacing: .04em; }
+
+/* ============================ VERDICT ============================ */
+.verdict {
+  background: var(--surface); border: 1px solid var(--hairline);
+  border-top: 3px solid var(--series-c);
+  box-shadow: var(--shadow); padding: 22px 24px; margin-bottom: 26px;
+}
+.verdict-head { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: center; margin-bottom: 6px; }
+.verdict h2 { font-size: clamp(20px, 2.8vw, 27px); line-height: 1.2; }
+.verdict h2 em { font-style: normal; color: var(--series-c); }
+.verdict .lede { color: var(--ink-2); margin-top: 12px; max-width: 78ch; font-size: 14.5px; }
+.reasons {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 1px; background: var(--hairline); border: 1px solid var(--hairline); margin-top: 20px;
+}
+.reason { background: var(--surface); padding: 13px 15px; }
+.reason .k { font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.reason .v { font-family: var(--serif); font-size: 25px; font-weight: 600; margin: 5px 0 3px; letter-spacing: -0.02em; }
+.reason .d { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px;
+  font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
+  border: 1px solid currentColor; white-space: nowrap;
+}
+.pill.go   { color: var(--good-ink); }
+.pill.no   { color: var(--critical-ink); }
+.pill svg { width: 11px; height: 11px; }
+
+/* ============================ SECTIONS ============================ */
+section { margin-top: 34px; }
+.sec-head { display: flex; align-items: baseline; gap: 12px; border-bottom: 1px solid var(--rule); padding-bottom: 7px; margin-bottom: 16px; }
+.sec-head h3 { font-size: 19px; }
+.sec-head .note { font-size: 12px; color: var(--muted); margin-left: auto; text-align: right; }
+
+/* ============================ TABLE ============================ */
+.tbl-scroll { overflow-x: auto; background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow); }
+table.headline { border-collapse: collapse; width: 100%; min-width: 660px; font-size: 13.5px; }
+table.headline th, table.headline td { padding: 9px 14px; text-align: right; border-bottom: 1px solid var(--hairline); }
+table.headline th:first-child, table.headline td:first-child { text-align: left; }
+table.headline thead th {
+  font-size: 11px; letter-spacing: .07em; text-transform: uppercase; font-weight: 700;
+  color: var(--ink); background: var(--surface-2); border-bottom: 1.5px solid var(--rule); white-space: nowrap;
+}
+table.headline thead th.b { color: var(--series-b); }
+table.headline thead th.c { color: var(--series-c); }
+table.headline td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.headline tr.band td { background: var(--surface-2); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--muted); padding: 6px 14px; }
+table.headline tr.key td { font-weight: 700; }
+table.headline tr.key td.num { font-size: 14.5px; }
+table.headline tr:last-child td { border-bottom: none; }
+table.headline td.win-c { color: var(--series-c); }
+table.headline td.win-b { color: var(--series-b); }
+table.headline .sub { display: block; font-size: 11px; color: var(--muted); font-weight: 400; letter-spacing: 0; text-transform: none; margin-top: 2px; }
+
+/* ============================ CHARTS ============================ */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow); padding: 18px 20px 14px; position: relative; }
+.card h4 { font-family: var(--serif); font-size: 16px; font-weight: 600; margin: 0 0 2px; letter-spacing: -0.01em; }
+.card .cap { font-size: 12px; color: var(--muted); margin-bottom: 12px; line-height: 1.4; }
+.chart-host { position: relative; }
+.chart-host svg { display: block; width: 100%; height: auto; overflow: visible; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 4px; font-size: 12px; color: var(--ink-2); }
+.legend .item { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 11px; height: 11px; flex: none; }
+.swatch.line { width: 18px; height: 0; border-top-width: 2.5px; border-top-style: solid; }
+.swatch.dash { border-top-style: dashed; }
+
+.tip {
+  position: absolute; pointer-events: none; opacity: 0; transform: translate(-50%, -100%);
+  background: var(--ink); color: var(--plane); padding: 6px 9px; font-size: 11.5px; line-height: 1.35;
+  white-space: nowrap; z-index: 20; transition: opacity .12s ease; box-shadow: var(--shadow);
+}
+.tip b { font-variant-numeric: tabular-nums; }
+.tip.on { opacity: 1; }
+
+details.data { margin-top: 12px; border-top: 1px solid var(--hairline); padding-top: 8px; }
+details.data summary { font-size: 11.5px; color: var(--muted); cursor: pointer; list-style: none; font-weight: 600; letter-spacing: .04em; }
+details.data summary::-webkit-details-marker { display: none; }
+details.data summary::before { content: "▸ "; }
+details.data[open] summary::before { content: "▾ "; }
+details.data table { border-collapse: collapse; width: 100%; font-size: 12px; margin-top: 8px; }
+details.data th, details.data td { padding: 4px 8px; text-align: right; border-bottom: 1px solid var(--hairline); font-variant-numeric: tabular-nums; }
+details.data th:first-child, details.data td:first-child { text-align: left; font-variant-numeric: normal; }
+details.data thead th { color: var(--muted); font-weight: 600; font-size: 11px; }
+
+/* ============================ SCORECARD ============================ */
+.score { background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow); padding: 20px 22px 16px; }
+.score-row { display: grid; grid-template-columns: minmax(150px, 1.5fr) 46px minmax(150px, 2.4fr); gap: 14px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--hairline); }
+.score-row:last-of-type { border-bottom: none; }
+.score-row .dim { font-size: 13.5px; line-height: 1.3; }
+.score-row .wt { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.meters { display: flex; flex-direction: column; gap: 5px; }
+.meter { display: grid; grid-template-columns: 1fr 62px; gap: 10px; align-items: center; }
+.track { height: 13px; background: var(--surface-2); position: relative; }
+.fill { height: 100%; }
+.fill.b { background: var(--series-b); }
+.fill.c { background: var(--series-c); }
+.meter .val { font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--ink-2); white-space: nowrap; }
+.meter .val b { font-weight: 700; }
+.score-total { display: grid; grid-template-columns: minmax(150px, 1.5fr) 46px minmax(150px, 2.4fr); gap: 14px; align-items: center; padding: 14px 0 4px; border-top: 2px solid var(--ink); margin-top: 6px; }
+.score-total .dim { font-family: var(--serif); font-size: 16px; font-weight: 600; }
+.totals { display: flex; flex-wrap: wrap; gap: 8px 26px; }
+.tot { display: flex; align-items: baseline; gap: 8px; }
+.tot .n { font-family: var(--serif); font-size: 27px; font-weight: 600; letter-spacing: -0.02em; }
+.tot .n.b { color: var(--series-b); }
+.tot .n.c { color: var(--series-c); }
+.tot .l { font-size: 12px; color: var(--ink-2); }
+
+/* ============================ CONDITIONS ============================ */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+.panel { background: var(--surface); border: 1px solid var(--hairline); box-shadow: var(--shadow); padding: 18px 20px; }
+.panel.go { border-top: 3px solid var(--good); }
+.panel.no { border-top: 3px solid var(--warning); }
+.panel h4 { font-family: var(--serif); font-size: 16.5px; font-weight: 600; margin: 0 0 3px; }
+.panel .cap { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+.panel ol { margin: 0; padding-left: 0; list-style: none; counter-reset: c; display: flex; flex-direction: column; gap: 9px; }
+.panel li { counter-increment: c; font-size: 13px; line-height: 1.45; padding-left: 28px; position: relative; color: var(--ink-2); }
+.panel li::before {
+  content: counter(c, lower-roman); position: absolute; left: 0; top: 1px;
+  font-size: 10.5px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums;
+  width: 20px; text-align: right; letter-spacing: .03em;
+}
+.panel li b { color: var(--ink); font-weight: 650; }
+
+/* ============================ FOOTER ============================ */
+footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid var(--rule); font-size: 11.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 24px; justify-content: space-between; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+@media (max-width: 620px) {
+  .score-row, .score-total { grid-template-columns: 1fr; gap: 7px; }
+  .score-row .wt { text-align: left; }
+}
+</style>
+
+<div class="wrap">
+
+  <!-- ===================== MASTHEAD ===================== -->
+  <header class="masthead">
+    <p class="eyebrow">Meridian Trust Bank &nbsp;·&nbsp; Board of Directors &nbsp;·&nbsp; Corporate Development</p>
+    <div class="top">
+      <h1>Card-Lending Scale Strategy</h1>
+    </div>
+    <p class="sub">
+      Two acquisition targets, one capital budget. Project&nbsp;Northfield buys a $7.6bn revolving card book outright;
+      Project&nbsp;Harborview buys the underwriting capability and the deposits to fund it. This brief sets out what the
+      pro&nbsp;forma numbers say about each.
+    </p>
+    <div class="meta" style="margin-top:12px">
+      <span><b>Decision brief</b> — one page</span>
+      <span><b>Anchor year</b> FY2025 (YE 31 Dec 2025)</span>
+      <span><b>Currency</b> CAD $ millions</span>
+      <span><b>Model</b> MA_Merger_Model.xlsx — 884 formulas</span>
+      <span><b>13 August 2026</b></span>
+    </div>
+  </header>
+
+  <p class="disclaimer">
+    <b>FICTIONAL&nbsp;/&nbsp;SIMULATED&nbsp;DATA.</b>
+    All entities, financial figures, and events in this document are entirely fictional, created for
+    illustrative/educational simulation purposes. They do not represent any real institution, and nothing here is
+    financial, investment, or M&amp;A advice.
+  </p>
+
+  <!-- ===================== VERDICT ===================== -->
+  <div class="verdict">
+    <div class="verdict-head">
+      <h2>Acquire <em>Harborview Community Bank</em> for $1,050mm. Decline Northfield as structured.</h2>
+      <span class="pill go" aria-label="Recommendation: proceed with Harborview">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 8.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Proceed
+      </span>
+    </div>
+    <p class="lede">
+      Northfield is the more accretive transaction and the one that answers the board's mandate in a single step. It is
+      also not executable as structured. It takes pro&nbsp;forma CET1 to <b>7.42%</b> — 358bp below our internal target and
+      42bp above the regulatory floor — and forces a <b>$1,054.5mm</b> equity issuance equal to a fifth of our market
+      capitalisation. Price the capital in, apply the board's recession stress, and Northfield's return advantage over
+      Harborview collapses from 858bp to 67bp. We would be paying a full price, in scarce capital, for a book whose credit
+      quality has deteriorated in each of the last three years.
+    </p>
+
+    <div class="reasons">
+      <div class="reason">
+        <p class="k">Capital cost is structural</p>
+        <p class="v tnum" style="color:var(--critical-ink)">$1,054.5mm</p>
+        <p class="d">Equity Northfield forces — 20.0% of market cap. Even at a nil-goodwill price its RWA alone would still demand $189.5mm.</p>
+      </div>
+      <div class="reason">
+        <p class="k">Accretion, stressed</p>
+        <p class="v tnum">+39.8% → +1.5%</p>
+        <p class="d">Northfield's Year-1 accretion under recession. Harborview moves only from +3.9% to +2.1%.</p>
+      </div>
+      <div class="reason">
+        <p class="k">Risk-adjusted return gap</p>
+        <p class="v tnum">858bp → 67bp</p>
+        <p class="d">Northfield's Year-3 ROIC advantage, before and after stress. The premium is credit risk, not alpha.</p>
+      </div>
+      <div class="reason">
+        <p class="k">Weighted scorecard</p>
+        <p class="v tnum">3.85 <span style="color:var(--muted);font-size:17px">vs</span> 3.00</p>
+        <p class="d">Harborview by 0.85. Northfield would need a 6.7 on capital or credit — above the maximum of 5 — to draw level.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== HEADLINE TABLE ===================== -->
+  <section>
+    <div class="sec-head">
+      <h3>Headline comparison</h3>
+      <p class="note">Source: MA_Merger_Model.xlsx, tab “Side-by-Side”</p>
+    </div>
+    <div class="tbl-scroll">
+      <table class="headline">
+        <thead>
+          <tr>
+            <th scope="col">Metric</th>
+            <th scope="col" class="b">Northfield Card Bank<span class="sub">Deal B — scale &amp; yield</span></th>
+            <th scope="col" class="c">Harborview Community<span class="sub">Deal C — funding &amp; quality</span></th>
+            <th scope="col">Favours</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="band"><td colspan="4">Transaction &amp; purchase accounting</td></tr>
+          <tr><td>Purchase price (all cash)</td><td class="num">$1,650mm</td><td class="num">$1,050mm</td><td class="num">—</td></tr>
+          <tr><td>Implied price / book · price / earnings</td><td class="num">1.83x · 4.73x</td><td class="num">1.31x · 14.19x</td><td class="num">—</td></tr>
+          <tr class="key"><td>Goodwill created <span class="sub">deducted from CET1 in full</span></td><td class="num">$865mm</td><td class="num win-c">$262mm</td><td class="num win-c">Deal C</td></tr>
+
+          <tr class="band"><td colspan="4">Capital</td></tr>
+          <tr class="key"><td>Pro forma CET1, before raise <span class="sub">Meridian standalone 13.50% · target 11.00%</span></td><td class="num">7.42%</td><td class="num win-c">10.31%</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>Headroom over 7.0% regulatory floor</td><td class="num">42bp</td><td class="num">331bp</td><td class="num win-c">Deal C</td></tr>
+          <tr class="key"><td>Minimum equity raise to restore 11.0%</td><td class="num">$1,054.5mm</td><td class="num win-c">$187.5mm</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>Raise as % of market cap · ownership dilution</td><td class="num">20.0% · 16.6%</td><td class="num">3.6% · 3.4%</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>Tangible book value per share dilution</td><td class="num">(11.5)%</td><td class="num">(5.8)%</td><td class="num win-c">Deal C</td></tr>
+
+          <tr class="band"><td colspan="4">Earnings &amp; returns</td></tr>
+          <tr class="key"><td>Year-3 EPS accretion <span class="sub">after each deal's required raise</span></td><td class="num win-b">+89.0%</td><td class="num">+28.6%</td><td class="num win-b">Deal B</td></tr>
+          <tr><td>Year-3 ROIC on total capital committed</td><td class="num win-b">23.0%</td><td class="num">14.4%</td><td class="num win-b">Deal B</td></tr>
+          <tr class="key"><td>Stress-adjusted Year-3 ROIC</td><td class="num">14.35%</td><td class="num">13.68%</td><td class="num">Neither</td></tr>
+          <tr><td>Three-year deal IRR</td><td class="num win-b">54.5%</td><td class="num">30.4%</td><td class="num win-b">Deal B</td></tr>
+
+          <tr class="band"><td colspan="4">Scale &amp; strategic impact</td></tr>
+          <tr class="key"><td>Uplift to Meridian's card book</td><td class="num win-b">7.34x</td><td class="num">1.30x</td><td class="num win-b">Deal B</td></tr>
+          <tr><td>Card accounts acquired · purchase volume</td><td class="num">2,850k · $15,300mm</td><td class="num">145k · $1,350mm</td><td class="num win-b">Deal B</td></tr>
+          <tr><td>Committed but undrawn lines acquired</td><td class="num">$12,350mm</td><td class="num">$1,425mm</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>Deposits acquired</td><td class="num">$6,100mm <span class="sub">broker / direct</span></td><td class="num">$8,200mm <span class="sub">branch chequing &amp; savings</span></td><td class="num win-c">Deal C</td></tr>
+
+          <tr class="band"><td colspan="4">Credit &amp; conduct</td></tr>
+          <tr class="key"><td>Net charge-off rate, FY2025</td><td class="num">4.60% <span class="sub">rising</span></td><td class="num win-c">1.20% <span class="sub">flat</span></td><td class="num win-c">Deal C</td></tr>
+          <tr><td>90+ DPD · three-year change</td><td class="num">2.40% · +90bp</td><td class="num">0.50% · flat</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>Expected loss rate (PD × LGD)</td><td class="num">4.64%</td><td class="num">1.09%</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>IFRS 9 Stage 2 · Stage 3</td><td class="num">12.5% · 6.5%</td><td class="num">4.0% · 1.0%</td><td class="num win-c">Deal C</td></tr>
+          <tr><td>Open conduct-regulator matter</td><td class="num">2024 CLI remediation <span class="sub">not fully retired</span></td><td class="num">None</td><td class="num win-c">Deal C</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===================== CHARTS ===================== -->
+  <section>
+    <div class="sec-head">
+      <h3>The evidence</h3>
+      <p class="note">Every value is a live formula in the supporting model</p>
+    </div>
+
+    <div class="grid-2">
+
+      <!-- CET1 -->
+      <div class="card">
+        <h4>Pro forma CET1 against the thresholds</h4>
+        <p class="cap">Northfield lands 42bp above the regulatory floor before any raise, and breaches it under stress if the raise is not completed.</p>
+        <div class="chart-host" id="host-cet1"><div class="tip" id="tip-cet1"></div></div>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:var(--series-b)"></span> Northfield (Deal B)</span>
+          <span class="item"><span class="swatch" style="background:var(--series-c)"></span> Harborview (Deal C)</span>
+          <span class="item"><span class="swatch line" style="border-top-color:var(--muted)"></span> Meridian standalone 13.50%</span>
+          <span class="item"><span class="swatch line dash" style="border-top-color:var(--warning)"></span> Internal target 11.00%</span>
+          <span class="item"><span class="swatch line dash" style="border-top-color:var(--critical)"></span> Regulatory floor 7.00%</span>
+        </div>
+        <details class="data"><summary>Show data</summary>
+          <table><thead><tr><th scope="col">CET1 ratio</th><th scope="col">Deal B</th><th scope="col">Deal C</th></tr></thead>
+          <tbody>
+            <tr><td>At close, before raise</td><td>7.42%</td><td>10.31%</td></tr>
+            <tr><td>At close, after raise</td><td>11.00%</td><td>11.00%</td></tr>
+            <tr><td>Recession stress, with raise</td><td>10.14%</td><td>10.93%</td></tr>
+            <tr><td>Recession stress, no raise</td><td>6.61%</td><td>10.24%</td></tr>
+          </tbody></table>
+        </details>
+      </div>
+
+      <!-- EPS -->
+      <div class="card">
+        <h4>EPS accretion versus Meridian standalone</h4>
+        <p class="cap">Northfield's advantage is real and large — until the fourth group, where one recession removes almost all of it in a single year.</p>
+        <div class="chart-host" id="host-eps"><div class="tip" id="tip-eps"></div></div>
+        <div class="legend">
+          <span class="item"><span class="swatch" style="background:var(--series-b)"></span> Northfield (Deal B)</span>
+          <span class="item"><span class="swatch" style="background:var(--series-c)"></span> Harborview (Deal C)</span>
+        </div>
+        <details class="data"><summary>Show data</summary>
+          <table><thead><tr><th scope="col">EPS accretion</th><th scope="col">Deal B</th><th scope="col">Deal C</th></tr></thead>
+          <tbody>
+            <tr><td>FY2026E</td><td>+39.8%</td><td>+3.9%</td></tr>
+            <tr><td>FY2027E</td><td>+81.7%</td><td>+27.9%</td></tr>
+            <tr><td>FY2028E</td><td>+89.0%</td><td>+28.6%</td></tr>
+            <tr><td>FY2026E under recession stress</td><td>+1.5%</td><td>+2.1%</td></tr>
+          </tbody></table>
+        </details>
+      </div>
+
+      <!-- CREDIT TREND -->
+      <div class="card" style="grid-column: 1 / -1">
+        <h4>The diligence signal: three years of acquired-book credit quality</h4>
+        <p class="cap">Northfield grew receivables at a 24% compound rate while every credit metric moved against it. Harborview's did not move at all. This is the pattern the FY2025 snapshot hides.</p>
+        <div class="chart-host" id="host-trend"><div class="tip" id="tip-trend"></div></div>
+        <div class="legend">
+          <span class="item"><span class="swatch line" style="border-top-color:var(--series-b)"></span> Northfield — net charge-offs</span>
+          <span class="item"><span class="swatch line dash" style="border-top-color:var(--series-b)"></span> Northfield — 90+ DPD</span>
+          <span class="item"><span class="swatch line" style="border-top-color:var(--series-c)"></span> Harborview — net charge-offs</span>
+          <span class="item"><span class="swatch line dash" style="border-top-color:var(--series-c)"></span> Harborview — 90+ DPD</span>
+        </div>
+        <details class="data"><summary>Show data</summary>
+          <table><thead><tr><th scope="col">Rate</th><th scope="col">FY2023</th><th scope="col">FY2024</th><th scope="col">FY2025</th><th scope="col">Change</th></tr></thead>
+          <tbody>
+            <tr><td>Northfield — net charge-offs</td><td>3.00%</td><td>3.70%</td><td>4.60%</td><td>+160bp</td></tr>
+            <tr><td>Northfield — 90+ DPD</td><td>1.50%</td><td>1.90%</td><td>2.40%</td><td>+90bp</td></tr>
+            <tr><td>Northfield — provisions / receivables</td><td>4.36%</td><td>4.71%</td><td>5.10%</td><td>+74bp</td></tr>
+            <tr><td>Northfield — CET1 ratio</td><td>13.50%</td><td>12.40%</td><td>11.50%</td><td>(200)bp</td></tr>
+            <tr><td>Harborview — net charge-offs</td><td>1.20%</td><td>1.20%</td><td>1.20%</td><td>—</td></tr>
+            <tr><td>Harborview — 90+ DPD</td><td>0.50%</td><td>0.50%</td><td>0.50%</td><td>—</td></tr>
+            <tr><td>Harborview — CET1 ratio</td><td>16.50%</td><td>16.80%</td><td>17.10%</td><td>+60bp</td></tr>
+          </tbody></table>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== SCORECARD ===================== -->
+  <section>
+    <div class="sec-head">
+      <h3>Weighted decision scorecard</h3>
+      <p class="note">Bars show weighted score against the maximum available for that dimension</p>
+    </div>
+    <div class="score" id="scorecard"></div>
+  </section>
+
+  <!-- ===================== CONDITIONS ===================== -->
+  <section>
+    <div class="sec-head">
+      <h3>What the board is asked to approve</h3>
+    </div>
+    <div class="cols">
+      <div class="panel go">
+        <h4>Proceed — Harborview, subject to conditions</h4>
+        <p class="cap">Eight conditions; the four that carry the most weight</p>
+        <ol>
+          <li><b>Capital.</b> Buybacks suspended from signing until CET1 clears 11.0% — expected within two quarters from retained earnings, so no issuance is required.</li>
+          <li><b>Underwriting talent.</b> Two-year retention for the Chief Credit Officer and the full consumer underwriting team, as a condition precedent. The capability is the asset being bought.</li>
+          <li><b>Funding synergy validation.</b> The 10bp blended funding improvement — $45.6mm, the largest single synergy line — evidenced against the actual funding book before signing, with price revisited below 7bp.</li>
+          <li><b>Walk-away discipline.</b> No consideration above $1,050mm without returning to the board. At $1,150mm the Year-3 return on committed capital falls below 13%.</li>
+        </ol>
+      </div>
+      <div class="panel no">
+        <h4>Decline — Northfield, with a route back</h4>
+        <p class="cap">Four conditions for any re-engagement</p>
+        <ol>
+          <li><b>Price.</b> Maximum $1,320mm — standalone value, no control premium. The current $1,650mm asks our shareholders to pay a premium for risk transfer running the wrong way.</li>
+          <li><b>Structure.</b> At least 64% of consideration in Meridian stock. Newly issued acquirer equity counts as CET1 and offsets the goodwill deduction; it is the only structure that avoids a separate $1bn issuance.</li>
+          <li><b>Credit stabilisation.</b> Two consecutive half-years of flat or improving 90+ DPD and charge-offs, with independently re-performed vintage loss curves for the FY2024–25 cohorts.</li>
+          <li><b>Conduct &amp; capital.</b> Written confirmation the CLI remediation is retired, plus indemnity and escrow — and a pre-funded capital plan approved <em>before</em> signing, not after.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Meridian Trust Bank · Board confidential · Fictional case material</span>
+    <span>Supporting model: MA_Merger_Model.xlsx · Full analysis: MA_Decision_Memo.docx</span>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var CS = getComputedStyle(document.documentElement);
+  function tok(n) { return CS.getPropertyValue(n).trim(); }
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var SVGNS = "http://www.w3.org/2000/svg";
+  function el(name, attrs, parent) {
+    var n = document.createElementNS(SVGNS, name);
+    for (var k in attrs) { if (attrs[k] !== null && attrs[k] !== undefined) n.setAttribute(k, attrs[k]); }
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  /* bar with 4px rounded data-end, square where it meets the baseline */
+  function barPathUp(x, y, w, h, r) {
+    r = Math.min(r, w / 2, Math.max(h, 0));
+    if (h <= 0.6) return "M" + x + "," + y + " L" + (x + w) + "," + y;
+    return "M" + x + "," + (y + h) + " L" + x + "," + (y + r) +
+           " Q" + x + "," + y + " " + (x + r) + "," + y +
+           " L" + (x + w - r) + "," + y + " Q" + (x + w) + "," + y + " " + (x + w) + "," + (y + r) +
+           " L" + (x + w) + "," + (y + h) + " Z";
+  }
+
+  /* ---------- shared tooltip wiring ---------- */
+  function attachTip(host, tipEl, node, html) {
+    node.style.cursor = "default";
+    function show(e) {
+      var hb = host.getBoundingClientRect(), nb = node.getBoundingClientRect();
+      tipEl.innerHTML = html;
+      tipEl.style.left = (nb.left - hb.left + nb.width / 2) + "px";
+      tipEl.style.top = (nb.top - hb.top - 8) + "px";
+      tipEl.classList.add("on");
+    }
+    function hide() { tipEl.classList.remove("on"); }
+    node.addEventListener("mouseenter", show);
+    node.addEventListener("mousemove", show);
+    node.addEventListener("mouseleave", hide);
+    node.addEventListener("focus", show);
+    node.addEventListener("blur", hide);
+  }
+
+  var SERIES = [
+    { key: "b", name: "Northfield (Deal B)", color: "var(--series-b)" },
+    { key: "c", name: "Harborview (Deal C)", color: "var(--series-c)" }
+  ];
+
+  /* =========================================================
+     GROUPED COLUMN CHART
+     ========================================================= */
+  function groupedColumns(cfg) {
+    var host = document.getElementById(cfg.host);
+    var tip = document.getElementById(cfg.tip);
+    var hasRefs = !!(cfg.refs && cfg.refs.length);
+    var W = cfg.width || 620, H = cfg.height || 300;
+    var m = { t: 22, r: hasRefs ? 116 : 16, b: cfg.bottom || 56, l: 44 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": cfg.aria });
+    host.insertBefore(svg, tip);
+
+    var max = cfg.max;
+    function Y(v) { return m.t + ph - (v / max) * ph; }
+
+    /* gridlines + ticks */
+    cfg.ticks.forEach(function (tv) {
+      el("line", { x1: m.l, x2: m.l + pw, y1: Y(tv), y2: Y(tv), stroke: "var(--grid)", "stroke-width": 1 }, svg);
+      var tx = el("text", { x: m.l - 8, y: Y(tv) + 4, "text-anchor": "end", fill: "var(--muted)", "font-size": 10.5,
+                            "font-family": "var(--sans)", "font-variant-numeric": "tabular-nums" }, svg);
+      tx.textContent = cfg.tickFmt(tv);
+    });
+
+    /* threshold reference lines — labelled in the right gutter, clear of the plot */
+    (cfg.refs || []).forEach(function (rf) {
+      el("line", { x1: m.l, x2: m.l + pw + 8, y1: Y(rf.v), y2: Y(rf.v), stroke: rf.color,
+                   "stroke-width": 1.5, "stroke-dasharray": rf.dash || null }, svg);
+      var lab = el("text", { x: m.l + pw + 14, y: Y(rf.v) + 1, fill: rf.color, "font-size": 10.5,
+                             "font-weight": 700, "font-family": "var(--sans)",
+                             "dominant-baseline": "middle", "font-variant-numeric": "tabular-nums" }, svg);
+      lab.textContent = rf.value;
+      var lab2 = el("text", { x: m.l + pw + 14, y: Y(rf.v) + 13, fill: "var(--muted)", "font-size": 9.5,
+                              "font-family": "var(--sans)", "dominant-baseline": "middle" }, svg);
+      lab2.textContent = rf.label;
+    });
+
+    /* baseline */
+    el("line", { x1: m.l, x2: m.l + pw, y1: Y(0), y2: Y(0), stroke: "var(--rule)", "stroke-width": 1 }, svg);
+
+    var n = cfg.groups.length;
+    var gapExtra = cfg.splitBefore != null ? 26 : 0;
+    var gw = (pw - gapExtra) / n;
+    var pad = 8;   /* generous surface gap so paired value labels never touch */
+    var barW = Math.min(34, (gw - 20 - pad) / 2);
+
+    cfg.groups.forEach(function (g, gi) {
+      var shift = (cfg.splitBefore != null && gi >= cfg.splitBefore) ? gapExtra : 0;
+      var cx = m.l + shift + gw * gi + gw / 2;
+      var left = cx - (barW * 2 + pad) / 2;
+
+      SERIES.forEach(function (s, si) {
+        var v = g[s.key];
+        var x = left + si * (barW + pad);
+        var h = (v / max) * ph;
+        var p = el("path", {
+          d: barPathUp(x, Y(v), barW, h, 4), fill: s.color, tabindex: "0",
+          role: "graphics-symbol",
+          "aria-label": s.name + ", " + g.label + ": " + cfg.valFmt(v)
+        }, svg);
+        if (!reduce) {
+          p.style.transformOrigin = "center " + Y(0) + "px";
+          p.style.transform = "scaleY(0)";
+          p.style.transition = "transform .5s cubic-bezier(.22,.9,.3,1) " + (gi * 60 + si * 30) + "ms";
+          requestAnimationFrame(function () { requestAnimationFrame(function () { p.style.transform = "scaleY(1)"; }); });
+        }
+        attachTip(host, tip, p, "<b>" + cfg.valFmt(v) + "</b> &nbsp;" + s.name + "<br>" + g.label);
+
+        /* direct value label — knocked out of anything it crosses */
+        var vl = el("text", { x: x + barW / 2, y: Y(v) - 7, "text-anchor": "middle", fill: "var(--ink-2)",
+                              "font-size": 9.5, "font-weight": 700, "font-family": "var(--sans)",
+                              "letter-spacing": "-0.02em", "font-variant-numeric": "tabular-nums",
+                              stroke: "var(--surface)", "stroke-width": 3, "stroke-linejoin": "round",
+                              "paint-order": "stroke fill" }, svg);
+        vl.textContent = cfg.valFmt(v);
+      });
+
+      /* category label, wrapped */
+      g.label.split("\n").forEach(function (ln, li) {
+        var cl = el("text", { x: cx, y: Y(0) + 18 + li * 14, "text-anchor": "middle",
+                              fill: li === 0 ? "var(--ink-2)" : "var(--muted)",
+                              "font-size": li === 0 ? 11 : 10, "font-family": "var(--sans)",
+                              "font-weight": li === 0 ? 600 : 400 }, svg);
+        cl.textContent = ln;
+      });
+    });
+
+    /* separator before the stress group */
+    if (cfg.splitBefore != null) {
+      var sx = m.l + gw * cfg.splitBefore + gapExtra / 2;
+      el("line", { x1: sx, x2: sx, y1: m.t - 4, y2: Y(0) + 6, stroke: "var(--rule)",
+                   "stroke-width": 1, "stroke-dasharray": "2 4" }, svg);
+    }
+  }
+
+  groupedColumns({
+    host: "host-cet1", tip: "tip-cet1", max: 14.8, width: 700, height: 320, bottom: 62,
+    aria: "Grouped column chart of pro forma CET1 ratio for Deal B and Deal C at four points, against the 13.50% standalone, 11.00% internal target and 7.00% regulatory floor.",
+    ticks: [0, 4, 8, 12],
+    tickFmt: function (v) { return v + "%"; },
+    valFmt: function (v) { return v.toFixed(2) + "%"; },
+    refs: [
+      { v: 13.50, color: "var(--muted)", value: "13.50%", label: "Meridian standalone" },
+      { v: 11.00, color: "var(--warning)", dash: "5 4", value: "11.00%", label: "Internal target" },
+      { v: 7.00, color: "var(--critical)", dash: "5 4", value: "7.00%", label: "Regulatory floor" }
+    ],
+    groups: [
+      { label: "At close\nbefore raise", b: 7.42, c: 10.31 },
+      { label: "At close\nafter raise", b: 11.00, c: 11.00 },
+      { label: "Recession stress\nwith raise", b: 10.14, c: 10.93 },
+      { label: "Recession stress\nno raise", b: 6.61, c: 10.24 }
+    ]
+  });
+
+  groupedColumns({
+    host: "host-eps", tip: "tip-eps", max: 100, height: 306, bottom: 60,
+    aria: "Grouped column chart of EPS accretion versus Meridian standalone for Deal B and Deal C across FY2026 to FY2028, plus FY2026 under recession stress.",
+    ticks: [0, 25, 50, 75, 100],
+    tickFmt: function (v) { return (v ? "+" : "") + v + "%"; },
+    valFmt: function (v) { return "+" + v.toFixed(1) + "%"; },
+    splitBefore: 3,
+    groups: [
+      { label: "FY2026E\nYear 1", b: 39.8, c: 3.9 },
+      { label: "FY2027E\nYear 2", b: 81.7, c: 27.9 },
+      { label: "FY2028E\nYear 3", b: 89.0, c: 28.6 },
+      { label: "FY2026E\nrecession stress", b: 1.5, c: 2.1 }
+    ]
+  });
+
+  /* =========================================================
+     MULTI-LINE TREND  (hue = bank, dash = metric)
+     ========================================================= */
+  (function trend() {
+    var host = document.getElementById("host-trend");
+    var tip = document.getElementById("tip-trend");
+    var W = 1000, H = 300, m = { t: 20, r: 118, b: 44, l: 46 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+    var years = ["FY2023", "FY2024", "FY2025"];
+    var max = 5;
+
+    var lines = [
+      { name: "Northfield — net charge-offs", short: "NCO", color: "var(--series-b)", dash: null, v: [3.00, 3.70, 4.60], bank: "Northfield" },
+      { name: "Northfield — 90+ DPD", short: "90+ DPD", color: "var(--series-b)", dash: "6 4", v: [1.50, 1.90, 2.40], bank: "Northfield" },
+      { name: "Harborview — net charge-offs", short: "NCO", color: "var(--series-c)", dash: null, v: [1.20, 1.20, 1.20], bank: "Harborview" },
+      { name: "Harborview — 90+ DPD", short: "90+ DPD", color: "var(--series-c)", dash: "6 4", v: [0.50, 0.50, 0.50], bank: "Harborview" }
+    ];
+
+    var svg = el("svg", { viewBox: "0 0 " + W + " " + H, role: "img",
+      "aria-label": "Line chart of net charge-off rate and 90+ day delinquency for the Northfield and Harborview card books, FY2023 to FY2025. Northfield rises on both measures; Harborview is flat." });
+    host.insertBefore(svg, tip);
+
+    function X(i) { return m.l + (pw * i) / (years.length - 1); }
+    function Y(v) { return m.t + ph - (v / max) * ph; }
+
+    [0, 1, 2, 3, 4, 5].forEach(function (tv) {
+      el("line", { x1: m.l, x2: m.l + pw, y1: Y(tv), y2: Y(tv), stroke: "var(--grid)", "stroke-width": 1 }, svg);
+      var tx = el("text", { x: m.l - 8, y: Y(tv) + 4, "text-anchor": "end", fill: "var(--muted)", "font-size": 11,
+                            "font-family": "var(--sans)", "font-variant-numeric": "tabular-nums" }, svg);
+      tx.textContent = tv + "%";
+    });
+    el("line", { x1: m.l, x2: m.l + pw, y1: Y(0), y2: Y(0), stroke: "var(--rule)", "stroke-width": 1 }, svg);
+
+    years.forEach(function (y, i) {
+      var tx = el("text", { x: X(i), y: Y(0) + 22, "text-anchor": "middle", fill: "var(--ink-2)",
+                            "font-size": 12, "font-weight": 600, "font-family": "var(--sans)" }, svg);
+      tx.textContent = y;
+    });
+
+    lines.forEach(function (ln) {
+      var d = ln.v.map(function (v, i) { return (i ? "L" : "M") + X(i) + "," + Y(v); }).join(" ");
+      var path = el("path", { d: d, fill: "none", stroke: ln.color, "stroke-width": 2,
+                              "stroke-dasharray": ln.dash, "stroke-linecap": "round", "stroke-linejoin": "round" }, svg);
+      if (!reduce) {
+        var L = path.getTotalLength ? path.getTotalLength() : 0;
+        if (L) {
+          path.style.strokeDasharray = ln.dash ? ln.dash : L + " " + L;
+          if (!ln.dash) { path.style.strokeDashoffset = L; path.style.transition = "stroke-dashoffset .9s ease";
+            requestAnimationFrame(function () { requestAnimationFrame(function () { path.style.strokeDashoffset = 0; }); }); }
+        }
+      }
+      /* markers — 2px surface ring so overlaps stay readable */
+      ln.v.forEach(function (v, i) {
+        var isEnd = i === ln.v.length - 1;
+        var c = el("circle", { cx: X(i), cy: Y(v), r: isEnd ? 5.5 : 4.5, fill: ln.color,
+                               stroke: "var(--surface)", "stroke-width": 2, tabindex: "0",
+                               role: "graphics-symbol",
+                               "aria-label": ln.name + ", " + years[i] + ": " + v.toFixed(2) + "%" }, svg);
+        attachTip(host, tip, c, "<b>" + v.toFixed(2) + "%</b><br>" + ln.name + "<br>" + years[i]);
+      });
+      /* direct label at the right end */
+      var lastY = Y(ln.v[ln.v.length - 1]);
+      var t1 = el("text", { x: X(years.length - 1) + 14, y: lastY - 3, fill: ln.color, "font-size": 12,
+                            "font-weight": 700, "font-family": "var(--sans)" }, svg);
+      t1.textContent = ln.bank;
+      var t2 = el("text", { x: X(years.length - 1) + 14, y: lastY + 12, fill: "var(--ink-2)", "font-size": 11,
+                            "font-family": "var(--sans)", "font-variant-numeric": "tabular-nums" }, svg);
+      t2.textContent = ln.short + " · " + ln.v[ln.v.length - 1].toFixed(2) + "%";
+    });
+
+    /* annotation: the growth that produced it */
+    var an = el("text", { x: m.l + 6, y: m.t + 12, fill: "var(--muted)", "font-size": 11,
+                          "font-family": "var(--sans)", "font-style": "italic" }, svg);
+    an.textContent = "Northfield grew gross receivables 24% p.a. across this window — $4,910mm to $7,550mm";
+  })();
+
+  /* =========================================================
+     SCORECARD METERS
+     ========================================================= */
+  (function scorecard() {
+    var rows = [
+      { dim: "Strategic fit / scale impact on the card goal", w: 20, b: 5, c: 2 },
+      { dim: "Financial accretion by Year 3", w: 20, b: 5, c: 4 },
+      { dim: "Risk-adjusted return net of credit risk", w: 20, b: 3, c: 4 },
+      { dim: "Capital impact and equity raise need", w: 15, b: 1, c: 4 },
+      { dim: "Credit / asset quality risk", w: 15, b: 1, c: 5 },
+      { dim: "Regulatory, conduct and integration risk", w: 10, b: 1, c: 5 }
+    ];
+    var root = document.getElementById("scorecard");
+    var totB = 0, totC = 0;
+
+    rows.forEach(function (r, ri) {
+      var wt = r.w / 100, maxW = wt * 5;
+      var wB = wt * r.b, wC = wt * r.c;
+      totB += wB; totC += wC;
+
+      var row = document.createElement("div");
+      row.className = "score-row";
+      row.innerHTML =
+        '<div class="dim">' + r.dim + '</div>' +
+        '<div class="wt">' + r.w + '%</div>' +
+        '<div class="meters">' +
+          meter("b", "Northfield", wB, maxW, r.b) +
+          meter("c", "Harborview", wC, maxW, r.c) +
+        '</div>';
+      root.appendChild(row);
+
+      if (!reduce) {
+        var fills = row.querySelectorAll(".fill");
+        for (var i = 0; i < fills.length; i++) {
+          (function (f, delay) {
+            var target = f.style.width;
+            f.style.width = "0%";
+            f.style.transition = "width .55s cubic-bezier(.22,.9,.3,1) " + delay + "ms";
+            requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.width = target; }); });
+          })(fills[i], ri * 55 + i * 25);
+        }
+      }
+    });
+
+    function meter(key, label, val, max, score) {
+      var pct = (val / max) * 100;
+      return '<div class="meter" role="img" aria-label="' + label + ' scored ' + score +
+             ' of 5, contributing ' + val.toFixed(2) + ' of a possible ' + max.toFixed(2) + '">' +
+             '<div class="track"><div class="fill ' + key + '" style="width:' + pct.toFixed(1) + '%"></div></div>' +
+             '<div class="val"><b>' + val.toFixed(2) + '</b> <span style="color:var(--muted)">/ ' + max.toFixed(2) + '</span></div>' +
+             '</div>';
+    }
+
+    var tot = document.createElement("div");
+    tot.className = "score-total";
+    tot.innerHTML =
+      '<div class="dim">Weighted total</div>' +
+      '<div class="wt">100%</div>' +
+      '<div class="totals">' +
+        '<span class="tot"><span class="n b">' + totB.toFixed(2) + '</span><span class="l">Northfield (Deal B)</span></span>' +
+        '<span class="tot"><span class="n c">' + totC.toFixed(2) + '</span><span class="l">Harborview (Deal C)</span></span>' +
+        '<span class="tot"><span class="l">Harborview by <b>' + (totC - totB).toFixed(2) + '</b> — and Northfield would need a 6.7 on either capital or credit, above the maximum of 5, to draw level.</span></span>' +
+      '</div>';
+    root.appendChild(tot);
+  })();
+})();
+</script>

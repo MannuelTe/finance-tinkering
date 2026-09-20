@@ -1,0 +1,696 @@
+<title>Glossary — Bank M&A Case Study</title>
+<style>
+  :root {
+    --paper:      #F7F8FA;
+    --surface:    #FFFFFF;
+    --ink:        #14202E;
+    --ink-soft:   #5A6878;
+    --ink-faint:  #8894A3;
+    --rule:       #DDE3EA;
+    --rule-soft:  #EBEFF4;
+    --accent:     #0F6E78;
+    --accent-bg:  #E8F2F3;
+    --flag:       #A24B34;
+    --flag-bg:    #F7ECE8;
+    --shadow:     0 1px 2px rgba(20,32,46,.05), 0 8px 24px -16px rgba(20,32,46,.18);
+
+    --serif: ui-serif, "New York", Georgia, "Times New Roman", serif;
+    --sans:  -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono:  ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:     #0F1720;
+      --surface:   #151F2A;
+      --ink:       #E8EDF2;
+      --ink-soft:  #93A2B3;
+      --ink-faint: #6B7B8C;
+      --rule:      #253242;
+      --rule-soft: #1C2733;
+      --accent:    #5FBDC6;
+      --accent-bg: #142E33;
+      --flag:      #D98B72;
+      --flag-bg:   #2E1E19;
+      --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.6);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:     #0F1720;
+    --surface:   #151F2A;
+    --ink:       #E8EDF2;
+    --ink-soft:  #93A2B3;
+    --ink-faint: #6B7B8C;
+    --rule:      #253242;
+    --rule-soft: #1C2733;
+    --accent:    #5FBDC6;
+    --accent-bg: #142E33;
+    --flag:      #D98B72;
+    --flag-bg:   #2E1E19;
+    --shadow:    0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  /* ---- Masthead ---- */
+  .masthead {
+    padding: 64px 0 32px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 16px;
+  }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: clamp(32px, 5vw, 46px);
+    line-height: 1.12;
+    font-weight: 600;
+    letter-spacing: -.015em;
+    margin: 0 0 16px;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 17px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .note {
+    margin: 24px 0 0;
+    padding: 12px 16px;
+    border-left: 2px solid var(--rule);
+    font-size: 13.5px;
+    color: var(--ink-faint);
+    max-width: 68ch;
+  }
+
+  /* ---- Sticky control bar ---- */
+  .controls {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+    padding: 16px 0;
+    margin-bottom: 8px;
+  }
+  .controls-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    align-items: center;
+  }
+  .search-field { position: relative; flex: 1 1 260px; }
+  .search-field input {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 14px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 10px 12px 10px 34px;
+  }
+  .search-field input::placeholder { color: var(--ink-faint); }
+  .search-field input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+    border-color: transparent;
+  }
+  .search-field svg {
+    position: absolute;
+    left: 11px; top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    stroke: var(--ink-faint);
+    fill: none;
+    stroke-width: 2;
+    pointer-events: none;
+  }
+  .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .04em;
+  }
+  .jump a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    padding-bottom: 1px;
+  }
+  .jump a:hover, .jump a:focus-visible {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ---- Sections ---- */
+  section { margin-top: 56px; scroll-margin-top: 140px; }
+  .sec-head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 4px;
+  }
+  .sec-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .sec-head h2 {
+    font-family: var(--serif);
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    margin: 0;
+  }
+  .sec-blurb {
+    font-size: 14px;
+    color: var(--ink-faint);
+    margin: 10px 0 0;
+    max-width: 64ch;
+  }
+
+  /* ---- Entries ---- */
+  .entry {
+    display: grid;
+    grid-template-columns: 210px 1fr;
+    gap: 8px 32px;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--rule-soft);
+    align-items: start;
+  }
+  .entry:last-child { border-bottom: none; }
+  .term {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -.01em;
+    color: var(--ink);
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .expansion {
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    margin: 3px 0 0;
+    line-height: 1.45;
+  }
+  .entry-body p { margin: 0; max-width: 66ch; }
+  .entry-body p + p { margin-top: 10px; }
+
+  .formula {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--ink);
+    background: var(--accent-bg);
+    border-left: 2px solid var(--accent);
+    padding: 9px 14px;
+    margin-top: 12px !important;
+    border-radius: 0 3px 3px 0;
+    overflow-x: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .flag {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--flag);
+    background: var(--flag-bg);
+    padding: 2px 7px;
+    border-radius: 3px;
+    margin-top: 8px;
+  }
+
+  em { color: var(--ink); font-style: italic; }
+
+  .empty {
+    display: none;
+    padding: 56px 0;
+    text-align: center;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+  body.no-results .empty { display: block; }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-faint);
+  }
+
+  @media (max-width: 720px) {
+    .entry { grid-template-columns: 1fr; gap: 10px; }
+    .masthead { padding-top: 40px; }
+    .wrap { padding: 0 18px 64px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Reference · Meridian Trust M&amp;A Case</p>
+    <h1>Glossary: card economics, credit risk, and the arithmetic of a bank merger</h1>
+    <p class="standfirst">Every abbreviation used across the three banks' books and the acquisition analysis — what the letters stand for, and what the thing actually is. Plain language throughout; the only technical vocabulary kept is mathematical.</p>
+    <p class="note">Where an entry cites a figure (a 10% conversion factor, an 82% loss rate), it refers to the simulated case study. All three banks — Meridian Trust, Northfield Card Bank, Harborview Community Bank — and every number attached to them are fictional, built for this exercise. Nothing here is financial advice.</p>
+  </header>
+
+  <div class="controls">
+    <div class="controls-inner">
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <input type="search" id="q" placeholder="Filter — try &quot;default&quot;, &quot;capital&quot;, &quot;EPS&quot;…" aria-label="Filter glossary terms" autocomplete="off">
+      </div>
+      <p class="count" id="count"></p>
+      <nav class="jump" aria-label="Jump to section">
+        <a href="#deal">Deal</a>
+        <a href="#earnings">Earnings</a>
+        <a href="#risk">Credit risk</a>
+        <a href="#capital">Capital</a>
+        <a href="#cards">Cards</a>
+        <a href="#method">Method</a>
+      </nav>
+    </div>
+  </div>
+
+  <p class="empty">No term matches that filter.</p>
+
+  <!-- ============ 1. DEAL ============ -->
+  <section id="deal">
+    <div class="sec-head"><span class="sec-num">01</span><h2>Deal &amp; valuation</h2></div>
+    <p class="sec-blurb">The vocabulary of buying a company: what you pay, what you get, and whether the arithmetic leaves shareholders better off.</p>
+
+    <article class="entry"><div><h3 class="term">M&amp;A</h3><p class="expansion">Mergers &amp; Acquisitions</p></div><div class="entry-body">
+      <p>Buying, selling, or combining whole companies. In a merger two firms become one entity; in an acquisition one firm buys another and keeps control. This case is an acquisition, though the language of "merging" gets used loosely for both.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Acquirer / Target</h3><p class="expansion">Buyer / company being bought</p></div><div class="entry-body">
+      <p>Meridian Trust is the acquirer. Northfield and Harborview are the two candidate targets — the decision is which one to buy.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Book value</h3><p class="expansion">also: equity, net worth, shareholders' equity</p></div><div class="entry-body">
+      <p>What's left for the owners once every debt is subtracted from every asset. The same quantity the balance sheet calls equity.</p>
+      <p class="formula">Book value = Total assets − Total liabilities</p></div></article>
+
+    <article class="entry"><div><h3 class="term">P/B</h3><p class="expansion">Price-to-Book ratio</p></div><div class="entry-body">
+      <p>The purchase price divided by book value — a multiple, read as dollars paid per dollar of net worth. Paying $1,650mm for a bank carrying $900mm of equity is 1.83x book: $1.83 for every $1 of net worth on the page.</p>
+      <p class="formula">P/B = Purchase price ÷ Book value</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Premium</h3><p class="expansion">acquisition premium</p></div><div class="entry-body">
+      <p>How much more than the standalone value you pay, as a percentage. You pay it because the seller won't hand over control at market price, and because you expect the combination to be worth more than the parts.</p>
+      <p class="formula">Premium = (Offer price ÷ Standalone value) − 1</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Goodwill</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The part of the price not matched by identifiable net assets: brand, customer relationships, the synergies you're betting on. It lands on the buyer's balance sheet as an asset — but regulators subtract it straight back out when measuring capital, because it can't absorb a loss. Paying a high premium therefore costs capital twice: once in cash, once in the deduction.</p>
+      <p class="formula">Goodwill = Price paid − Net assets acquired</p></div></article>
+
+    <article class="entry"><div><h3 class="term">TCE</h3><p class="expansion">Tangible Common Equity</p></div><div class="entry-body">
+      <p>Equity with goodwill and other intangibles stripped out — the "hard" net worth, counting only what could actually be sold or used to absorb losses.</p>
+      <p class="formula">TCE = Equity − Goodwill − Other intangibles</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Synergies</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Money the combined firm earns or saves that neither could alone. <em>Cost synergies</em> come from removing duplicated overhead — two head offices become one. <em>Revenue synergies</em> come from selling more, or funding more cheaply. Cost synergies are far more reliable than revenue synergies, which is why analysts discount the latter heavily.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Run-rate</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The full annual amount once something is completely in place, as opposed to the partial amount that actually shows up in the first year. A "$192mm run-rate synergy" is what you get in a steady year, not what you get immediately.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Phase-in</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Synergies arrive gradually, not on closing day. A "40 / 80 / 100" phase-in means 40% of the run-rate is realised in year one, 80% in year two, all of it by year three.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Accretion / Dilution</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Whether a deal raises or lowers the buyer's earnings per share versus staying independent. <em>Accretive</em> = higher EPS; <em>dilutive</em> = lower. It's pure arithmetic — combined earnings over combined share count, compared with the standalone ratio — and it's the number boards react to first, even though it says nothing about risk.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">EPS</h3><p class="expansion">Earnings Per Share</p></div><div class="entry-body">
+      <p>Profit attributable to each share. Issuing new shares to fund a deal raises the denominator, which is why an equity-funded acquisition can dilute EPS even when the target is profitable.</p>
+      <p class="formula">EPS = Net income ÷ Shares outstanding</p></div></article>
+
+    <article class="entry"><div><h3 class="term">NPV</h3><p class="expansion">Net Present Value</p></div><div class="entry-body">
+      <p>Add up the future cash flows, discounting each one for how far away it is, then subtract what you paid. Positive means the deal creates value; negative means you overpaid. The discount rate <em>r</em> is what you'd otherwise earn at comparable risk.</p>
+      <p class="formula">NPV = Σ [ CF<sub>n</sub> ÷ (1 + r)<sup>n</sup> ] − Initial cost</p></div></article>
+
+    <article class="entry"><div><h3 class="term">IRR</h3><p class="expansion">Internal Rate of Return</p></div><div class="entry-body">
+      <p>The discount rate that makes NPV come out to exactly zero — read as the deal's implied annual percentage return. Compare it against the cost of the capital funding the deal: below that line, the deal destroys value.</p>
+      <p class="formula">Find r such that NPV(r) = 0</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Purchase accounting</h3><p class="expansion">acquisition accounting</p></div><div class="entry-body">
+      <p>The rules for restating a target's balance sheet at fair value on closing day. The target's historical numbers don't simply carry over — assets and loss reserves are re-measured, and the gap between price and re-measured net assets becomes goodwill.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Day-1 gross-up</h3><p class="expansion">day-one provisioning adjustment</p></div><div class="entry-body">
+      <p>At close, the acquired loan book's expected losses are re-estimated. If the buyer's estimate exceeds the reserve the target was carrying, the difference is booked immediately — a cost incurred before a single new loan is written. It's the accounting expression of "we think your book is worse than you said."</p></div></article>
+  </section>
+
+  <!-- ============ 2. EARNINGS ============ -->
+  <section id="earnings">
+    <div class="sec-head"><span class="sec-num">02</span><h2>Earnings &amp; performance</h2></div>
+    <p class="sec-blurb">How a bank makes money and how that gets measured — mostly ratios, so institutions of different sizes can be compared on the same footing.</p>
+
+    <article class="entry"><div><h3 class="term">NII</h3><p class="expansion">Net Interest Income</p></div><div class="entry-body">
+      <p>Interest earned minus interest paid. The core of banking in one subtraction: borrow cheaply, lend dearly, keep the difference.</p>
+      <p class="formula">NII = Interest income − Interest expense</p></div></article>
+
+    <article class="entry"><div><h3 class="term">NIM</h3><p class="expansion">Net Interest Margin</p></div><div class="entry-body">
+      <p>The same idea as a percentage, so a small bank and a large one can be compared. A card issuer's NIM is enormous next to a mortgage lender's — around 15% versus around 2.5% — because the rates charged are so much higher. So is the loss rate.</p>
+      <p class="formula">NIM = NII ÷ Earning assets</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Spread</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Lending rate minus funding cost — the gross margin before losses and overhead are taken out. A 21% card APR funded at 3% is an 18-point spread, which is why card lending looks irresistible until charge-offs are subtracted.</p>
+      <p class="formula">Spread = Lending rate − Funding cost</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Funding cost</h3><p class="expansion">cost of funds</p></div><div class="entry-body">
+      <p>What the bank pays for the money it lends out: interest on deposits, coupons on debt. A bank with lots of everyday chequing accounts funds itself very cheaply. One relying on rate-shopping depositors and wholesale markets pays considerably more — the structural gap between Meridian and Northfield.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">ROE</h3><p class="expansion">Return on Equity</p></div><div class="entry-body">
+      <p>What the owners earn on their stake. Note the lever hidden in the denominator: thin equity mechanically inflates ROE, so a very high figure can signal aggressive leverage rather than excellence.</p>
+      <p class="formula">ROE = Net income ÷ Equity</p></div></article>
+
+    <article class="entry"><div><h3 class="term">ROA</h3><p class="expansion">Return on Assets</p></div><div class="entry-body">
+      <p>Earnings per dollar of balance sheet, regardless of how it was funded. Immune to the leverage effect that flatters ROE, which is why the two are read together.</p>
+      <p class="formula">ROA = Net income ÷ Total assets</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Efficiency ratio</h3><p class="expansion">cost-to-income ratio</p></div><div class="entry-body">
+      <p>Operating cost per dollar of revenue. Despite the name, <em>lower is better</em> — 43% means 43 cents of cost per dollar earned. Branch networks push it up; a lean digital-only lender pushes it down.</p>
+      <p class="formula">Efficiency ratio = Operating expense ÷ Revenue</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Opex</h3><p class="expansion">Operating expenses</p></div><div class="entry-body">
+      <p>Staff, branches, technology, marketing — everything except interest paid and credit losses. This is the line cost synergies attack, because it's the line with obvious duplication between two merged firms.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">PCL</h3><p class="expansion">Provision for Credit Losses</p></div><div class="entry-body">
+      <p>The expense recorded for loans expected to go bad. It's an estimate booked <em>ahead</em> of the actual loss, which makes it the most judgement-laden line in a bank's income statement — and the easiest one to be wrong about.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Interchange</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The fee the merchant's side pays the card issuer on every purchase, roughly 1.5% of the amount. The key property: it carries no credit risk. You collect it whether or not the customer ever borrows a cent — which is the entire economic case for customers who pay in full.</p>
+      <p class="formula">Interchange = Purchase volume × ~1.5%</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Non-interest income</h3><p class="expansion">fee income</p></div><div class="entry-body">
+      <p>Revenue that isn't interest: interchange, service charges, wealth management, insurance. Prized because it doesn't consume capital or carry default risk the way lending does.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">CAGR</h3><p class="expansion">Compound Annual Growth Rate</p></div><div class="entry-body">
+      <p>The single constant yearly rate that would turn the starting value into the ending value. It smooths a lumpy path into one comparable number — and in doing so hides whether growth was steady or wildly erratic.</p>
+      <p class="formula">CAGR = (End ÷ Start)<sup>1/years</sup> − 1</p></div></article>
+
+    <article class="entry"><div><h3 class="term">bps</h3><p class="expansion">Basis points</p></div><div class="entry-body">
+      <p>One hundredth of a percentage point. Used because percentages of percentages are ambiguous: "rates rose 0.5%" could mean half a point, or half a percent of the current rate. "50 bps" can only mean one thing.</p>
+      <p class="formula">1 bp = 0.01%    ·    100 bps = 1 percentage point</p></div></article>
+
+    <article class="entry"><div><h3 class="term">FY</h3><p class="expansion">Fiscal Year</p></div><div class="entry-body">
+      <p>The company's own twelve-month reporting period, which need not match the calendar. In this case study FY2025 is the calendar year ending 31 December 2025.</p></div></article>
+  </section>
+
+  <!-- ============ 3. CREDIT RISK ============ -->
+  <section id="risk">
+    <div class="sec-head"><span class="sec-num">03</span><h2>Credit risk</h2></div>
+    <p class="sec-blurb">The measurement of borrowers not paying you back. Nearly all of it reduces to three quantities multiplied together — and to arguments about how each was estimated.</p>
+
+    <article class="entry"><div><h3 class="term">PD</h3><p class="expansion">Probability of Default</p></div><div class="entry-body">
+      <p>The chance a borrower stops paying within a stated window. Always attached to a horizon — a 12-month PD and a lifetime PD are different numbers for the same person, and confusing them is a common error.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">LGD</h3><p class="expansion">Loss Given Default</p></div><div class="entry-body">
+      <p>Of the amount owed when default happens, the fraction never recovered. An 82% LGD means 18 cents back on the dollar. Card lending is unsecured — there is no house to repossess — so LGD sits brutally high, and nearly the whole exposure becomes loss.</p>
+      <p class="formula">LGD = 1 − Recovery rate</p></div></article>
+
+    <article class="entry"><div><h3 class="term">EAD</h3><p class="expansion">Exposure at Default</p></div><div class="entry-body">
+      <p>How much is actually owed at the moment of default. On a credit card this is neither today's balance nor the full limit — it's whatever the borrower has drawn by then, which is systematically higher than their historical average, because people borrow more as their situation deteriorates.</p>
+      <p class="flag">Central to this case</p></div></article>
+
+    <article class="entry"><div><h3 class="term">EL</h3><p class="expansion">Expected Loss</p></div><div class="entry-body">
+      <p>Three numbers multiplied. Almost every dispute in credit risk is a dispute about one of the three factors — and because they multiply, an error in any one scales the whole answer.</p>
+      <p class="formula">EL = PD × LGD × EAD</p></div></article>
+
+    <article class="entry"><div><h3 class="term">DPD</h3><p class="expansion">Days Past Due</p></div><div class="entry-body">
+      <p>How far behind a borrower is. "30+ DPD" means at least a month late; "90+ DPD" means three months, which is the conventional definition of default. The gap between those two buckets is the warning period — the reason a lender's information always arrives late.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">NCO</h3><p class="expansion">Net Charge-Off</p></div><div class="entry-body">
+      <p>Debt written off as uncollectible, less anything later recovered, as a percentage of the book. This is the loss that <em>actually happened</em> — the reality check against the loss that was predicted.</p>
+      <p class="formula">NCO rate = (Charge-offs − Recoveries) ÷ Average receivables</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Allowance</h3><p class="expansion">loss reserve, provision balance</p></div><div class="entry-body">
+      <p>Money already set aside on the balance sheet against losses not yet realised. PCL is the expense that builds it up; charge-offs draw it down. A reserve that isn't growing as fast as delinquency is a reserve falling behind.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Delinquency</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Being behind on payments. Watched obsessively because it leads: today's delinquency becomes next year's charge-off, so a rising delinquency curve is a loss forecast you can already read.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Adverse selection</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The people most eager to take what you're offering are disproportionately the ones you'd least want to give it to. A borrower who immediately draws on a new credit limit is revealing an unmet need for cash — and they reveal it only <em>after</em> you've granted the line.</p>
+      <p class="flag">Central to this case</p></div></article>
+
+    <article class="entry"><div><h3 class="term">EAD migration</h3><p class="expansion">exposure drift, drawdown at default</p></div><div class="entry-body">
+      <p>The pattern where borrowers steadily consume their available credit as they approach default — so exposure is largest at precisely the moment it's most likely to be lost. It's why an unused credit line is never truly free: the bank's right to cancel is worth less than it appears, because the information justifying cancellation arrives after the drawdown.</p>
+      <p class="flag">Central to this case</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Bust-out fraud</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Behave impeccably for six to twelve months, earn a limit increase, draw everything at once across every card, disappear. Engineered specifically around limit-increase programs, because those programs reward exactly the clean payment history a patient fraudster can manufacture.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Thin file</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>A short credit history. Not bad — <em>unmeasured</em>. There isn't enough observed behaviour to model with confidence, and twelve months contains no economic downturn, so nothing has yet been tested under stress.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Behavioural scorecard</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>A model scoring existing customers on what they've actually done since opening the account — payment ratio, utilisation trend, cash-advance use — as distinct from the origination scorecard used when they first applied. Whether someone pays in full or pays the minimum is the single strongest signal it reads.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Credit bureau</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The agency holding a borrower's credit history across all lenders. A <em>soft pull</em> checks the file without affecting the borrower's score; a <em>hard pull</em> is recorded and lowers it slightly. Bureau data refreshes monthly — one of the lags that makes lender information stale.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Reserve cushion</h3><p class="expansion">allowance coverage ÷ charge-off rate</p></div><div class="entry-body">
+      <p>Roughly how many years of today's losses the existing reserve would cover. Northfield's fell from 1.39x to 1.01x across three years — meaning reserves that once carried a comfortable margin now barely cover one year of current losses, with the book still growing at 24% a year.</p>
+      <p class="formula">Cushion = (Allowance ÷ Gross receivables) ÷ NCO rate</p></div></article>
+  </section>
+
+  <!-- ============ 4. CAPITAL ============ -->
+  <section id="capital">
+    <div class="sec-head"><span class="sec-num">04</span><h2>Capital &amp; regulation</h2></div>
+    <p class="sec-blurb">How much loss a bank can absorb before failing, and the rules that govern the answer. Capital is the constraint that decides whether a deal is even possible.</p>
+
+    <article class="entry"><div><h3 class="term">CET1</h3><p class="expansion">Common Equity Tier 1</p></div><div class="entry-body">
+      <p>The highest-quality capital: common shares plus retained earnings, less deductions such as goodwill. This is the money that absorbs losses first and without argument, which is why regulators care about it above all else.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">CET1 ratio</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The headline solvency measure. Northfield's fall from 13.5% to 11.5% over three years is the whole risk story in one number — it grew faster than it could generate capital to support the growth.</p>
+      <p class="formula">CET1 ratio = CET1 capital ÷ RWA</p></div></article>
+
+    <article class="entry"><div><h3 class="term">RWA</h3><p class="expansion">Risk-Weighted Assets</p></div><div class="entry-body">
+      <p>Assets rescaled by how risky they are before being compared against capital — so that $100 of government bonds and $100 of credit-card debt don't count the same. It's the denominator that makes capital ratios comparable across very different balance sheets.</p>
+      <p class="formula">RWA = Σ (Exposure × Risk weight)</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Risk weight</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The scaling percentage itself. In this case: 45% for balances belonging to customers who pay in full, 75% for those who carry debt. The same dollar of receivable consumes nearly twice the capital depending on the borrower's habit — so a book's <em>mix</em> matters as much as its size.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">CCF</h3><p class="expansion">Credit Conversion Factor</p></div><div class="entry-body">
+      <p>The fraction of an <em>undrawn</em> commitment that must be treated as though already lent, for capital purposes. Cancellable card lines moved from 0% to 10% under the Basel III finalisation — an acknowledgement that unused credit is not risk-free, since it gets used precisely when things go wrong.</p>
+      <p class="formula">Capital-relevant exposure = Drawn + (Undrawn × CCF)</p></div></article>
+
+    <article class="entry"><div><h3 class="term">UCC</h3><p class="expansion">Unconditionally Cancellable Commitment</p></div><div class="entry-body">
+      <p>A credit line the bank may withdraw at any time, for any reason. It attracts little capital because of that right — but the right is worth less than it looks, since the bank learns it should cancel only after the borrower has already drawn.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Leverage ratio</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Capital over total assets with no risk weighting whatsoever. A deliberate backstop: it can't be gamed by arguing your assets are safer than they look, so it catches banks whose risk models are too optimistic.</p>
+      <p class="formula">Leverage ratio = Capital ÷ Total assets</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Basel III</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The international rulebook setting how much capital banks must hold, written after the 2008 crisis. "The finalisation" refers to a later set of revisions, which included the change to how undrawn card lines are treated.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">IFRS 9</h3><p class="expansion">International Financial Reporting Standard 9</p></div><div class="entry-body">
+      <p>The accounting standard for financial instruments, including how loan-loss reserves must be calculated. Its defining principle: reserve for losses you <em>expect</em>, not just losses already visible.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">ECL</h3><p class="expansion">Expected Credit Loss</p></div><div class="entry-body">
+      <p>The reserve IFRS 9 requires — a probability-weighted loss estimate built from PD, LGD and EAD. For revolving credit it must consider exposure beyond the bank's right to cancel, so granting a limit increase raises the reserve even while the line sits entirely unused.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Stage 1 / 2 / 3</h3><p class="expansion">IFRS 9 impairment stages</p></div><div class="entry-body">
+      <p><em>Stage 1</em> — performing; reserve covers losses expected in the next 12 months. <em>Stage 2</em> — credit risk has risen significantly; the reserve jumps to cover losses expected across the loan's entire remaining life. <em>Stage 3</em> — already credit-impaired, typically 90+ days late.</p>
+      <p>The step from 1 to 2 is a cliff, not a slope: the reserve can multiply without a single missed payment. It's why a deteriorating book's provision expense accelerates faster than its delinquency rate.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Prudential regulator</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The supervisor responsible for whether a bank stays solvent — capital, liquidity, risk models, survival.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Conduct regulator</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The separate supervisor responsible for whether customers are treated fairly: consent, disclosure, affordability. A bank can satisfy its prudential regulator completely and still fail here — which is exactly Northfield's problem, since its limit-increase practices drew an inquiry despite the lending itself being profitable.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Remediation</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The corrective program run after a regulator finds a problem: fixing the practice, and usually compensating affected customers. In diligence it's a warning sign that outlives its formal closure — the finding is settled, the underlying culture may not be.</p></div></article>
+  </section>
+
+  <!-- ============ 5. CARDS ============ -->
+  <section id="cards">
+    <div class="sec-head"><span class="sec-num">05</span><h2>The card business</h2></div>
+    <p class="sec-blurb">Credit cards behave unlike other lending: the customer decides how much to borrow and when, which puts a valuable option on their side of the table.</p>
+
+    <article class="entry"><div><h3 class="term">CLI</h3><p class="expansion">Credit Limit Increase</p></div><div class="entry-body">
+      <p>Raising a cardholder's maximum. Unusual among banking products because it costs the bank essentially nothing until it's drawn — and that asymmetry is what makes it both a cheap growth lever and a genuine hazard.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Transactor</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Pays the balance in full every month. Generates interchange, pays no interest. Low risk, low capital consumption — and barely profitable.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Revolver</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Carries a balance from month to month and pays interest on it. Where card profit actually comes from, and where the losses live. The central tension of this case: Meridian's book is full of transactors, and Northfield's is full of revolvers.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Revolve rate</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The share of accounts or balances that carry over rather than being paid off. 40% versus 71% is the difference between a payments business and a lending business.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Utilization</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Balance divided by credit limit. It does double duty: a risk signal to the lender, and an input to the borrower's own credit score. Hence the irony of a limit increase — it lowers utilisation, improving the customer's score, which makes them a better credit and simultaneously more attractive to competitors.</p>
+      <p class="formula">Utilization = Balance ÷ Credit limit</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Headroom</h3><p class="expansion">undrawn balance, available credit</p></div><div class="entry-body">
+      <p>Credit granted but not yet borrowed. Invisible on the income statement, very much present in the risk calculation — this is the quantity the CCF exists to capture.</p>
+      <p class="formula">Headroom = Credit limit − Balance</p></div></article>
+
+    <article class="entry"><div><h3 class="term">APR</h3><p class="expansion">Annual Percentage Rate</p></div><div class="entry-body">
+      <p>The yearly interest rate charged on a carried balance. Notably, it does <em>not</em> change when a limit is raised — the lender adjusts quantity, not price.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Credit rationing</h3><p class="expansion">quantity rationing</p></div><div class="entry-body">
+      <p>Lenders limit <em>how much</em> they'll lend rather than raising the price to match risk — because a higher rate disproportionately attracts the borrowers most likely to default, making the book worse rather than better-compensated. So the lever is the size of the limit, not the APR. This is why a limit increase is "priced" in dollars of headroom.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Option</h3><p class="expansion">in the financial sense</p></div><div class="entry-body">
+      <p>The right, but not the obligation, to do something. Its value is asymmetric — you exercise it only when it suits you, so it's worth most in the circumstances least convenient for whoever wrote it. A credit line is an option held by the customer; the right to cancel is an option held by the bank. The customer's is worth most exactly when their finances are deteriorating, and the bank's is blunted by the lag in finding out.</p>
+      <p class="flag">Central to this case</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Monoline</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>A lender doing essentially one product rather than full-service banking. Efficient and focused — no branch network, low cost ratio — but with no deposit franchise or diversified earnings to fall back on when that one product turns.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Broker deposits</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Deposits gathered through intermediaries and rate-comparison platforms rather than a branch relationship. Fast to raise and easy to scale, but more expensive and considerably quicker to leave the moment someone else posts a better rate.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Securitization</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Bundling receivables and selling them to investors as securities, funding the book without needing deposits. It lets a lender grow far faster than its deposit base would allow — which is both the mechanism of Northfield's growth and part of why its funding costs more.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Attrition</h3><p class="expansion">churn</p></div><div class="entry-body">
+      <p>Customers leaving. Card acquisition costs run to hundreds of dollars per account fully loaded, so preventing attrition is worth real money — and declining a limit increase is a measurable driver of it.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Wallet share</h3><p class="expansion">primacy, top-of-wallet</p></div><div class="entry-body">
+      <p>Being the card someone reaches for first. A higher limit buys this directly: it makes the card viable for large purchases and displaces balances held on competitors' cards.</p></div></article>
+  </section>
+
+  <!-- ============ 6. METHOD ============ -->
+  <section id="method">
+    <div class="sec-head"><span class="sec-num">06</span><h2>Analysis &amp; method</h2></div>
+    <p class="sec-blurb">Terms describing how the numbers in this case were constructed and interrogated, rather than what they measure.</p>
+
+    <article class="entry"><div><h3 class="term">Anchor year</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The one fixed year from which all other figures are derived. Here FY2025 — every earlier year was built backwards from it so that the case rests on a single consistent foundation.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Back-cast</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Constructing earlier years consistent with a known anchor and a stated trend — forecasting in reverse. Each back-cast year still has to balance and tie out internally, or the trend is just decoration.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Pro forma</h3><p class="expansion">"as if"</p></div><div class="entry-body">
+      <p>Financial statements showing what the combined company <em>would</em> look like had the deal already closed. Always a construction, never an observation — its credibility rests entirely on the assumptions feeding it.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Ties out / balances</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Internal consistency checks. A balance sheet <em>balances</em> when assets equal liabilities plus equity. A statement <em>ties out</em> when its components sum to the stated total. Failing either means the model is arithmetically broken, whatever the conclusion says.</p>
+      <p class="formula">Assets = Liabilities + Equity</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Weighted average</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Multiply each item by its weight, sum the products, divide by the total weight. The decision scorecard is exactly this: six dimensions, six weights, one resulting number. The weights encode what the board actually cares about — choosing them <em>is</em> the strategic judgement.</p>
+      <p class="formula">Weighted avg = Σ (value<sub>i</sub> × weight<sub>i</sub>) ÷ Σ weight<sub>i</sub></p></div></article>
+
+    <article class="entry"><div><h3 class="term">Sensitivity analysis</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Change one input, hold everything else fixed, and measure how far the answer moves. It identifies which assumptions actually carry the conclusion — and which ones you can stop arguing about.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Stress test</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Re-running the whole model under a deliberately adverse scenario to see what breaks and whether capital survives. Not a forecast — a structural test. The question isn't whether the recession happens, it's whether you'd still be standing.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Elasticity</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>How responsive one quantity is to a change in another, expressed as a ratio of percentage changes. How much extra balance does a given limit increase actually generate? That number is measured, not assumed.</p>
+      <p class="formula">Elasticity = %Δ in response ÷ %Δ in driver</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Champion / challenger</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>Run the current rule (champion) against a variant (challenger) on randomly split populations, and measure which performs better. A controlled experiment. The important implication: these relationships are <em>measured</em>, not derived from theory.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Holdout</h3><p class="expansion">control group</p></div><div class="entry-body">
+      <p>The randomly selected group deliberately left untreated, so there's something to compare the treated group against. Without one you can't distinguish the effect of your action from whatever would have happened anyway.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Period-end vs. average</h3><p class="expansion">denominator convention</p></div><div class="entry-body">
+      <p>Whether a ratio divides by the closing balance or the average across the year. Both are legitimate and they give different answers — so the convention has to be stated, or two correct analyses will appear to disagree.</p></div></article>
+
+    <article class="entry"><div><h3 class="term">Marginal vs. average</h3><p class="expansion">—</p></div><div class="entry-body">
+      <p>The cost or return of <em>one more</em> unit, versus the cost or return across everything so far. Decisions are made at the margin: the question is never "is this book profitable?" but "is the next dollar of it profitable?"</p></div></article>
+  </section>
+
+  <footer>
+    <p>Companion reference to the Meridian Trust acquisition analysis — the three banks' books, the merger model, and the board decision memo. All entities and figures cited are simulated.</p>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var input = document.getElementById('q');
+    var countEl = document.getElementById('count');
+    var entries = Array.prototype.slice.call(document.querySelectorAll('.entry'));
+    var sections = Array.prototype.slice.call(document.querySelectorAll('section'));
+    var total = entries.length;
+
+    entries.forEach(function (el) {
+      el.dataset.hay = el.textContent.toLowerCase().replace(/\s+/g, ' ');
+    });
+
+    function render(n) {
+      countEl.textContent = n === total ? total + ' terms' : n + ' of ' + total;
+      document.body.classList.toggle('no-results', n === 0);
+    }
+
+    function filter() {
+      var q = input.value.trim().toLowerCase();
+      var shown = 0;
+
+      entries.forEach(function (el) {
+        var hit = !q || el.dataset.hay.indexOf(q) !== -1;
+        el.style.display = hit ? '' : 'none';
+        if (hit) shown++;
+      });
+
+      sections.forEach(function (sec) {
+        var any = sec.querySelector('.entry:not([style*="none"])');
+        sec.style.display = any ? '' : 'none';
+      });
+
+      render(shown);
+    }
+
+    input.addEventListener('input', filter);
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { input.value = ''; filter(); }
+    });
+
+    render(total);
+  })();
+</script>

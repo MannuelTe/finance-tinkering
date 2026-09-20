@@ -1,0 +1,42 @@
+title: "A Gold/Silver Hedge for a Dynamic SPY/TLT Frontier"
+author: "Harness Research"
+slug: metals_hedged_frontier
+summary: >
+  This research note tests whether a liquid precious-metals sleeve improves a dynamic SPY/TLT
+  allocation. The core sleeve holds SPY/TLT at 60/40, the metals sleeve holds GLD/SLV at 70/30,
+  and the neutral reference assigns 80% to the core and 20% to metals. A causal volatility-gated
+  rule moves along the rolling two-sleeve efficient frontier, with sinusoidal, linear, and
+  quadratic five-session interpolation compared from January 2023 onward.
+data_source: yfinance
+universe: [SPY, TLT, GLD, SLV]
+benchmark: SPY
+start: "2023-01-01"
+end: null
+base_currency: USD
+costs_bps: 5.0
+rebalance: daily
+strategy:
+  module: strategy.py
+  params:
+    interpolation: sine
+    interpolation_days: 5
+    lookback: 126
+    min_history: 20
+    short_vol_days: 5
+    long_vol_days: 21
+    core_spy_weight: 0.60
+    metals_gold_weight: 0.70
+    reference_metals_weight: 0.20
+    min_metals_weight: 0.05
+    max_metals_weight: 0.35
+    risk_aversion: 3.0
+    volatility_band: 0.50
+hypotheses:
+  - id: H1
+    statement: "The sinusoidal rule has a higher net Sharpe ratio than the static 80/20 core/metals reference."
+  - id: H2
+    statement: "The static metals-hedged reference has a smaller maximum drawdown than unhedged static 60/40 SPY/TLT."
+  - id: H3
+    statement: "The ranking of sine, linear, and quadratic interpolation changes across transaction-cost assumptions."
+sections: []
+extra_sections: []

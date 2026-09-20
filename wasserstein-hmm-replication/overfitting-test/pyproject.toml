@@ -1,0 +1,12 @@
+[project]
+name = "overfit-hmm"
+version = "0.1.0"
+description = "Blocked-validation overfitting test for the Wasserstein-HMM method."
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "../paper-replication/src"]
+
+[tool.pylint.main]
+disable = ["C", "R"]

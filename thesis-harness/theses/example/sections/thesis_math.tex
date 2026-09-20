@@ -1,0 +1,36 @@
+\section{Momentum tilt between equities and bonds}\label{sec:thesis-math}
+
+Let \(P^{E}_t\) and \(P^{B}_t\) be the adjusted closes of SPY (equities) and TLT (bonds), and let
+\(L\) be the lookback (126 sessions). The trailing momentum of each asset at the close of session
+\(t\) is
+\begin{equation}
+  m^{a}_t=\frac{P^{a}_{t}}{P^{a}_{t-L}}-1,\qquad a\in\{E,B\}.
+  \label{eq:tm-momentum}
+\end{equation}
+The leader is \(\ell_t=\arg\max_a m^a_t\). With base equity weight \(w_0=0.6\) and tilt
+\(\tau=0.2\), the target weights are
+\begin{equation}
+  w^{\ell_t}_t=w^{\ell_t}_0+\tau,\qquad
+  w^{a}_t=w^{a}_0-\tau\ \ (a\ne\ell_t),\qquad
+  \sum_a w^a_t=1.
+  \label{eq:tm-weights}
+\end{equation}
+These use only \(\mathcal F_{t}\) at the close of session \(t\) and are applied to returns from
+\(t+1\), consistent with Equation~\eqref{eq:design-timing}. The excess return over the static
+60/40 reference portfolio is linear in the tilt:
+\begin{equation}
+  r^{\mathrm{strat}}_{t+1}-r^{\mathrm{static}}_{t+1}
+  =\tau\,s_t\,\bigl(r^{E}_{t+1}-r^{B}_{t+1}\bigr),\qquad
+  s_t=\begin{cases}+1,& \ell_t=E,\\-1,& \ell_t=B.\end{cases}
+  \label{eq:tm-excess}
+\end{equation}
+Because the cost is proportional to turnover, the net excess return per period has expectation
+\begin{equation}
+  \E\!\left[r^{\mathrm{strat}}_{t+1}-r^{\mathrm{static}}_{t+1}\right]
+  =\tau\,\E\!\left[s_t\,(r^{E}_{t+1}-r^{B}_{t+1})\right]-c\,\E[\mathrm{TO}_t],
+  \label{eq:tm-edge}
+\end{equation}
+where \(\mathrm{TO}_t\) is turnover. A tilt only trades when the leader flips, and each flip moves
+\(2\tau\) of weight in total. Hypothesis H2 (edge survives costs) is the statement that
+Equation~\eqref{eq:tm-edge} is positive at the assumed \(c\); H1 concerns the Sharpe ratio of the
+same series and is evaluated empirically in Section~\ref{sec:results}.

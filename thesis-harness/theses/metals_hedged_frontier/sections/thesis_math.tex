@@ -1,0 +1,156 @@
+\input{comparison_numbers.tex}
+
+\section{Thesis-specific model}\label{sec:thesis-math}
+
+GLD seeks to reflect gold-bullion prices less trust expenses, while SLV seeks to track silver
+bullion. They are liquid securities and imperfect commodity proxies, not direct delivery contracts.
+To control estimation error, the four assets are reduced to two internally fixed sleeves. Their
+returns are
+\begin{equation}\label{eq:tm-sleeves}
+ c_t=0.60r_{\mathrm{SPY},t}+0.40r_{\mathrm{TLT},t},
+ \qquad
+ m_t=0.70r_{\mathrm{GLD},t}+0.30r_{\mathrm{SLV},t}.
+\end{equation}
+For a metals allocation \(h\in[0.05,0.35]\), the four-asset weight vector is
+\begin{equation}\label{eq:tm-weights}
+ w(h)=\left(0.60(1-h),\ 0.40(1-h),\ 0.70h,\ 0.30h\right)^{\top}.
+\end{equation}
+The static hedged reference has \(h_0=0.20\), hence weights
+\((0.48,0.32,0.14,0.06)^{\top}\).
+
+Let \(x_t=(c_t,m_t)^{\top}\). Using at most \(L=126\) completed sessions, the rolling estimates
+are
+\begin{equation}\label{eq:tm-moments}
+ \widehat\mu_t=252\,\overline x_t,
+ \qquad
+ \widehat\Sigma_t=252\,\widehat{\operatorname{Cov}}_t(x)+\epsilon I.
+\end{equation}
+The global minimum-variance metals share and the mean--variance growth anchor are
+\begin{equation}\label{eq:tm-anchor}
+ h_t^{\mathrm{gmv}}=\arg\min_h v(h)^{\top}\widehat\Sigma_t v(h),
+ \quad
+ h_t^{\star}=\arg\max_{h\in\mathcal F_t}
+ \left\{v(h)^{\top}\widehat\mu_t-\frac{\gamma}{2}
+ v(h)^{\top}\widehat\Sigma_t v(h)\right\},
+ \quad v(h)=(1-h,h)^{\top},
+\end{equation}
+where \(\gamma=3\) and \(\mathcal F_t\) is the estimated efficient segment from the GMV point to
+the higher-estimated-return endpoint.
+
+The five-session compound-growth gap between the anchor and static hedged reference is
+\begin{equation}\label{eq:tm-growth-gap}
+ d_t=\prod_{j=0}^{4}\left(1+w(h_t^{\star})^{\top}r_{t-j}\right)
+ -\prod_{j=0}^{4}\left(1+w(h_0)^{\top}r_{t-j}\right).
+\end{equation}
+If \(\widehat\sigma_{5,t}\) and \(\widehat\sigma_{21,t}\) are annualised volatilities of the
+static hedged reference, the raw coordinate is
+\begin{equation}\label{eq:tm-coordinate}
+ q_t=\operatorname{clip}\!\left(
+ \frac{\widehat\sigma_{5,t}/\widehat\sigma_{21,t}-1}{0.50},-1,1\right)
+ \min\!\left\{\frac{|d_t|}{\widehat\sigma_{21,t}\sqrt{5/252}},1\right\}.
+\end{equation}
+Positive \(q_t\) moves toward the lower-risk point; negative \(q_t\) moves toward the frontier's
+higher-risk endpoint. A zero growth gap leaves the allocation at the rolling anchor.
+
+For interpolation type \(k\), the causal five-session coordinate is
+\begin{equation}\label{eq:tm-interpolation}
+ \widetilde q_t^{(k)}=\sum_{j=1}^{5}\kappa_j^{(k)}q_{t-5+j},
+ \qquad
+ \kappa_j^{(k)}=\frac{g_k(j)}{\sum_{\ell=1}^{5}g_k(\ell)},
+\end{equation}
+with \(g_{\mathrm{sine}}(j)=\sin(\pi j/10)\), \(g_{\mathrm{linear}}(j)=j\), and
+\(g_{\mathrm{poly}}(j)=j^2\). The target formed after close \(t\) is applied to the return on
+session \(t+1\).
+
+\section{Empirical comparison}\label{sec:interpolation-comparison}
+
+Table~\ref{tab:interpolations} separates two questions: whether adding a static metals sleeve
+helped relative to unhedged 60/40, and whether dynamically timing that sleeve added value.
+
+\begin{table}[H]
+\centering
+\caption{Net performance from January 2023.}
+\label{tab:interpolations}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Rule & CAGR & Volatility & Sharpe & Max drawdown & Avg. turnover \\
+\midrule
+Sine & \SineCAGR{} & \SineVol{} & \SineSharpe{} & \SineMaxDD{} & \SineTurnover{} \\
+Linear & \LinearCAGR{} & \LinearVol{} & \LinearSharpe{} & \LinearMaxDD{} & \LinearTurnover{} \\
+Quadratic & \PolynomialCAGR{} & \PolynomialVol{} & \PolynomialSharpe{} & \PolynomialMaxDD{} & \PolynomialTurnover{} \\
+Static hedged & \HedgedCAGR{} & \HedgedVol{} & \HedgedSharpe{} & \HedgedMaxDD{} & -- \\
+Static 60/40 & \CoreCAGR{} & \CoreVol{} & \CoreSharpe{} & \CoreMaxDD{} & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The pre-registered outcomes are H1 \textbf{\HOneResult{}}, H2 \textbf{\HTwoResult{}}, and H3
+\textbf{\HThreeResult{}}. These labels describe one historical sample, not a population result.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/fig_metals_wealth.pdf}
+\caption{Top: cumulative wealth for the primary sine rule, static references, and SPY. Bottom:
+linear and quadratic cumulative-wealth differences from sine, in basis points.}
+\label{fig:metals-wealth}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/fig_metals_weights.pdf}
+\caption{Top: sine-rule metals target and the static 20\% reference. Bottom: target-weight
+differences between the alternative kernels and sine.}
+\label{fig:metals-weights}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.96\textwidth]{figures/fig_metals_signal.pdf}
+\caption{Reference volatility estimates and the sine-smoothed frontier coordinate; the noisy raw
+coordinate is shown faintly for context.}
+\label{fig:metals-signal}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{figures/fig_metals_hedge_drawdown.pdf}
+\caption{Drawdown paths for the static metals-hedged reference and unhedged 60/40.}
+\label{fig:metals-drawdown}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{figures/fig_metals_frontier.pdf}
+\caption{Latest estimated frontier between the fixed core and metals sleeves. Coincident GMV,
+anchor, and target points are collapsed into one labelled marker.}
+\label{fig:metals-frontier}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.86\textwidth]{figures/fig_metals_costs.pdf}
+\caption{Top: interpolation Sharpe ratios under alternative trading costs. Bottom: linear and
+quadratic differences from sine, magnified by 100.}
+\label{fig:metals-costs}
+\end{figure}
+
+\section{Trade and broker interpretation}\label{sec:broker-interpretation}
+
+The latest completed-session target, dated \LatestModelDate{}, is \LatestSPY{} SPY,
+\LatestTLT{} TLT, \LatestGLD{} GLD, and \LatestSLV{} SLV. Its smoothed coordinate is
+\LatestModelCoordinate{}. These are model weights, not an executable recommendation. The supplied
+IBKR planner checks for paper mode, reads current positions and base-currency prices, sizes
+whole-share differences, and sets \texttt{transmit=False}; it never places an order.
+
+\section{References}\label{sec:references}
+
+\begin{itemize}
+  \item H. Markowitz (1952), ``Portfolio Selection,'' \emph{Journal of Finance} 7(1), 77--91,
+  \href{https://doi.org/10.1111/j.1540-6261.1952.tb01525.x}{doi:10.1111/j.1540-6261.1952.tb01525.x}.
+  \item World Gold Trust Services, ``SPDR Gold Shares: GLD,''
+  \href{https://www.spdrgoldshares.com/usa/gld/}{official fund page}.
+  \item iShares, ``iShares Silver Trust: SLV,''
+  \href{https://www.ishares.com/us/products/239855/ishares-silver-trust-fund}{official fund page}.
+  \item D. N. Politis and J. P. Romano (1994), ``The Stationary Bootstrap,'' \emph{JASA} 89(428),
+  1303--1313, \href{https://doi.org/10.1080/01621459.1994.10476870}{doi:10.1080/01621459.1994.10476870}.
+\end{itemize}

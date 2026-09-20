@@ -1,0 +1,30 @@
+title: "A Momentum Tilt Between Equities and Treasuries"
+author: "thesispaper example"
+slug: example
+summary: >
+  We test whether tilting a static 60/40 SPY/TLT portfolio toward whichever asset has the higher
+  trailing six-month return improves risk-adjusted performance after transaction costs.
+  The example uses synthetic prices so that it runs offline.
+# To run on real data: set `data_source: yfinance` (needs network; prices are cached in data/).
+# See src/thesispaper/spec.py for the exact accepted values.
+data_source: synthetic
+universe: [SPY, TLT]
+benchmark: SPY
+start: "2015-01-01"
+end: "2024-12-31"
+base_currency: USD
+costs_bps: 5.0
+rebalance: monthly
+strategy:
+  module: strategy.py
+  params:
+    lookback: 126
+    tilt: 0.20
+    base_equity: 0.60
+hypotheses:
+  - id: H1
+    statement: "The momentum-tilted portfolio has a higher Sharpe ratio than static 60/40."
+  - id: H2
+    statement: "The improvement survives proportional costs of 5 basis points."
+sections: []
+extra_sections: []

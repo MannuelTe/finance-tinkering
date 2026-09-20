@@ -1,0 +1,26 @@
+\section{Thesis and research design}\label{sec:design}
+
+This note formalises an investment thesis as a testable mathematical object and evaluates it on
+historical data. The pipeline is deliberately mechanical: a strategy maps the price history
+available at time \(t\) to target weights (Section~\ref{sec:accounting}); a backtest converts those
+weights into a net-of-cost return series; and every number quoted in the text is generated from
+that series, not typed by hand (Sections~\ref{sec:performance}--\ref{sec:sizing} define the
+estimators; Section~\ref{sec:results} reports them).
+
+The research sample contains \NObs{} sessions from \StartDate{} to \EndDate{}. Trading costs are
+charged at \CostBps{} basis points per unit of turnover. These assumptions are fixed before the
+results are read, and they determine what the figures can and cannot show.
+
+The key design rule is \emph{no look-ahead}: the weight vector applied to the return of session
+\(t\) may depend only on information dated strictly before that return is realised. Formally, if
+\(\mathcal F_{t-1}\) is the information set at the close of session \(t-1\), then
+\begin{equation}
+  w_t=g\!\left(\mathcal F_{t-1}\right),\qquad
+  r^{\mathrm{strat}}_t=\sum_i w_{i,t}\,r_{i,t}-c\sum_i\lvert w_{i,t}-w^{\mathrm{drift}}_{i,t}\rvert,
+  \label{eq:design-timing}
+\end{equation}
+where \(w^{\mathrm{drift}}_{i,t}\) is the previous target weight after drifting with the market and
+\(c=\text{CostBps}/10^{4}\) is the proportional cost rate.
+
+\subsection{Hypotheses}\label{sec:hypotheses}
+$hypotheses

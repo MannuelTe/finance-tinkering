@@ -1,0 +1,32 @@
+\section{Position sizing}\label{sec:sizing}
+
+For a small risky return \(R\) and fraction \(f\) of wealth invested, a second-order expansion of
+expected log growth is
+\begin{equation}
+  \E[\log(1+fR)]\approx f\,\E[R]-\frac{f^2}{2}\E[R^2].
+  \label{eq:log-growth}
+\end{equation}
+When the mean is small relative to volatility, \(\E[R^2]\approx\Var(R)\), and maximising over \(f\)
+gives the familiar approximate optimiser
+\begin{equation}
+  f^{\star}\approx\frac{\E[R]}{\Var(R)}.
+  \label{eq:kelly-approx}
+\end{equation}
+Because \(\E[R]\) and \(\Var(R)\) are estimated with error (Section~\ref{sec:estimation}), the
+full-Kelly fraction is systematically too aggressive. A fractional-Kelly rule scales it by
+\(\lambda\in(0,1]\) and imposes a cap \(f_{\max}\), after subtracting the per-trade cost \(c\):
+\begin{equation}
+  f=\min\!\left(f_{\max},\ \lambda\,\frac{\max(\widehat\mu-c,\,0)}{\widehat\sigma^{2}}\right).
+  \label{eq:fractional-kelly}
+\end{equation}
+This is ``Kelly-style'', not an exact Kelly solution: return distributions are not established,
+parameters are estimated, and the resulting weights are then constrained to
+\(\sum_i w_i\le 1\) as in Section~\ref{sec:accounting}. Growth is concave in \(f\) around
+\(f^\star\), so a fraction \(\lambda<1\) gives up a small amount of expected growth in exchange for
+a substantially smaller variance and drawdown.
+
+For this study, plugging the estimates of Section~\ref{sec:estimation} into
+Equation~\eqref{eq:kelly-approx} gives an approximate full-Kelly fraction of \KellyFull{}; with
+\(\lambda=\KellyFraction{}\) and cap \(f_{\max}=\KellyCap{}\), Equation~\eqref{eq:fractional-kelly}
+gives \KellyFrac{}. A fraction above one would imply leverage; the strategy does not use these figures, which serve
+only to show how fragile the full-Kelly value is given the standard error above.
