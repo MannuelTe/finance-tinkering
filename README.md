@@ -8,7 +8,7 @@ Pet projects around fintech, trading and quantitative research. Each folder is s
 | Folder | What it is |
 |---|---|
 | [`harness/`](harness) | Support tools and artefacts. |
-| [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test using blocked validation, with a read-only MCP server (Muse Code compatible) for the HMM maths. |
+| [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test whose blocked-validation fix gave a modest but statistically robust improvement. |
 | [`beta-scanner/`](beta-scanner) | Beta of a stock vs SPY / RSP (equal-weight) and an S&P 500 mid-cap scanner for names where the two betas diverge; early notebooks. |
 | [`notes/`](notes) | Research notes (e.g. how to gauge the impact of the regime-investing paper). |
 | [`archive/`](archive) | Old standalone SPY overnight research script (read-only IBKR, no order submission). |

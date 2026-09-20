@@ -2,6 +2,8 @@
 
 This folder looks only at the **Gaussian-HMM** part of the paper replication (in [`../paper-replication`](../paper-replication)). It changes one thing: how the number of hidden states $`K`$ is validated.
 
+**Outcome:** the blocked-validation change worked. Over 30 seeds it raised the mean Sharpe from 0.863 to 0.972 (paired gain +0.11, 95% CI +0.04 to +0.17; better in 24 of 30 seeds, p about 0.002), with fewer states chosen and about 30% less turnover. The effect is modest and comes mostly from 2023 to 2026 (details in Sections 5 and 6).
+
 ## 1. What was wrong with the original split
 
 Every 63 trading days the replication re-chooses $`K\in\{2,\dots,6\}`$. It fits each candidate on all history except the newest 126 days, then scores it on those 126 days (`select_order` in `models.py`). Two weaknesses:
@@ -200,13 +202,7 @@ The Sharpe difference is $`\Delta=\text{Sharpe}_{\text{blocked}}-\text{Sharpe}_{
 - **One configuration.** Blocks of 80 days, 3 random blocks, 60-day gap and 120-day minimum segment were set once. I did not test other settings, so the result may depend on them.
 - **Nothing here shows either method beats a passive portfolio in this period.** The question was only which validation scheme is better for choosing $`K`$.
 
-## 7. MCP server
-
-The maths can be called by AI agents through a read-only MCP server (stdio and streamable HTTP), including Meta's Muse Code. See [`MCP.md`](MCP.md) for tools, setup and safety notes.
-
-Intended for small-business and finance questions in Zurich, Zug, Winterthur and the Lower Mainland of British Columbia; the maths itself is region-agnostic and governance questions are declined.
-
-## 8. Paper
+## 7. Paper
 
 [`paper/overfitting_test.tex`](paper/overfitting_test.tex) (PDF: [`paper/overfitting_test.pdf`](paper/overfitting_test.pdf)) is the full write-up. Every number in it is generated from `results/*.json`, so re-running the study and then the generator keeps the paper consistent:
 

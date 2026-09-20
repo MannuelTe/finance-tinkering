@@ -23,7 +23,7 @@ Out-of-sample 2023-06-02 to 2026-02-20 (682 sessions), gross of costs:
 - Supported claim: persistent regimes stabilize portfolio construction relative to an unsmoothed KNN. Not supported: superiority over passive diversification.
 - Extension: a diversified bond sleeve instead of TLT alone lifts HMM Sharpe from 1.59 to about 1.78, but equal weight improves too (1.68 to 1.80), so the HMM still does not clearly win.
 
-**2. Blocked validation of K helps modestly** ([`overfitting-test/`](overfitting-test)).
+**2. The change worked: blocked validation of K improves results modestly** ([`overfitting-test/`](overfitting-test)).
 Choosing the number of states on several purged random blocks instead of the last 126 days,
 backtested 2019 to 2026 (1,794 days), 30 seeds:
 
@@ -37,7 +37,5 @@ backtested 2019 to 2026 (1,794 days), 30 seeds:
 - A modest effect (about 13% relative), driven mostly by 2023 to 2026; 2019 to 2022 is roughly a tie (2022 is negative for both).
 - Blocked CV picks fewer states and switches less often, consistent with the original selector overfitting one window, though the study does not prove that cause.
 - Max drawdown is about the same (-25.5% vs -26.6% on average). It is robust to algorithm randomness, not a test on independent market data, and is not a claim that either beats a passive portfolio.
-
-The overfitting-test folder also ships a read-only MCP server ([`MCP.md`](overfitting-test/MCP.md)) exposing the HMM maths.
 
 > Research software, not investment advice. One market history, gross-of-cost backtests.
