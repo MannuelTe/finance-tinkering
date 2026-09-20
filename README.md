@@ -1,5 +1,7 @@
 # Finance Tinkering
 
+*Last updated: 2026-09-20*
+
 Pet projects around fintech, trading and quantitative research. Each folder is self-contained
 (own README, dependencies and tests where applicable).
 
@@ -12,6 +14,13 @@ Pet projects around fintech, trading and quantitative research. Each folder is s
 | [`beta-scanner/`](beta-scanner) | Beta of a stock vs SPY / RSP (equal-weight) and an S&P 500 mid-cap scanner for names where the two betas diverge; early notebooks. |
 | [`notes/`](notes) | Research notes (e.g. how to gauge the impact of the regime-investing paper). |
 | [`archive/`](archive) | Old standalone SPY overnight research script (read-only IBKR, no order submission). |
+
+Nested project READMEs:
+
+- `tradebot-overnight/`: [`paper/`](tradebot-overnight/paper) (LaTeX maths paper), [`graphics_paper/`](tradebot-overnight/graphics_paper) (figure pipeline).
+- `thesis-harness/`: [`theses/volatility_frontier`](thesis-harness/theses/volatility_frontier), [`theses/metals_hedged_frontier`](thesis-harness/theses/metals_hedged_frontier), [`research/wasserstein_hmm_replication`](thesis-harness/research/wasserstein_hmm_replication).
+- `wasserstein-hmm-replication/`: [`paper-replication/`](wasserstein-hmm-replication/paper-replication), [`overfitting-test/`](wasserstein-hmm-replication/overfitting-test).
+- `ib-merger-model/`: [`app/`](ib-merger-model/app) (Streamlit workbench).
 
 `tradebot-overnight` and `thesis-harness` share an ancestry; `thesis-harness` also carries its own
 copy of the Wasserstein replication under `research/`.
