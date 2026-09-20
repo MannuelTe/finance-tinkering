@@ -8,18 +8,12 @@ Pet projects around fintech, trading and quantitative research. Each folder is s
 | Folder | What it is |
 |---|---|
 | [`harness/`](harness) | Support tools and artefacts. |
-| [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Support tools and artefacts. |
-| [`beta-scanner/`](beta-scanner) | Support tools and artefacts. |
-| [`notes/`](notes) | Support tools and artefacts. |
-| [`archive/`](archive) | Support tools and artefacts. |
-| [`legacy/`](legacy) | Older projects: [`tradebot-overnight/`](legacy/tradebot-overnight), [`ib-merger-model/`](legacy/ib-merger-model). |
-
-Nested project READMEs:
-
-- `harness/`: [`theses/volatility_frontier`](harness/theses/volatility_frontier), [`theses/metals_hedged_frontier`](harness/theses/metals_hedged_frontier), [`research/wasserstein_hmm_replication`](harness/research/wasserstein_hmm_replication).
-- `wasserstein-hmm-replication/`: [`paper-replication/`](wasserstein-hmm-replication/paper-replication), [`overfitting-test/`](wasserstein-hmm-replication/overfitting-test).
-- `legacy/tradebot-overnight/`: [`paper/`](legacy/tradebot-overnight/paper), [`graphics_paper/`](legacy/tradebot-overnight/graphics_paper).
-- `legacy/ib-merger-model/`: [`app/`](legacy/ib-merger-model/app).
+| [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test using blocked validation, with a read-only MCP server (Muse Code compatible) for the HMM maths. |
+| [`beta-scanner/`](beta-scanner) | Beta of a stock vs SPY / RSP (equal-weight) and an S&P 500 mid-cap scanner for names where the two betas diverge; early notebooks. |
+| [`notes/`](notes) | Research notes (e.g. how to gauge the impact of the regime-investing paper). |
+| [`archive/`](archive) | Old standalone SPY overnight research script (read-only IBKR, no order submission). |
+| [`legacy/tradebot-overnight/`](legacy/tradebot-overnight) | Multi-currency ETF portfolio bot (IBKR paper / in-memory sim) with a volatility-aware SPY close-to-open "overnight" sleeve, Streamlit dashboard, Postgres/Alembic state, and a LaTeX paper on the underlying maths. |
+| [`legacy/ib-merger-model/`](legacy/ib-merger-model) | Investment-banking M&A pet project: three fictional banks, merger model (xlsx), Streamlit app, decision memo and glossary. |
 
 `harness` and `legacy/tradebot-overnight` share an ancestry; `harness` also carries its own
 copy of the Wasserstein replication under `research/`.
