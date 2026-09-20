@@ -199,3 +199,13 @@ The Sharpe difference is $`\Delta=\text{Sharpe}_{\text{blocked}}-\text{Sharpe}_{
 - **Ensemble averaging helps the bootstrap.** Averaging 30 seeds removes seed noise from the return series, so its Sharpe difference (+0.114) is more precise than any single run's. It corresponds to holding the average of 30 portfolios, not one.
 - **One configuration.** Blocks of 80 days, 3 random blocks, 60-day gap and 120-day minimum segment were set once. I did not test other settings, so the result may depend on them.
 - **Nothing here shows either method beats a passive portfolio in this period.** The question was only which validation scheme is better for choosing $`K`$.
+
+## 7. Paper
+
+[`paper/overfitting_test.tex`](paper/overfitting_test.tex) (PDF: [`paper/overfitting_test.pdf`](paper/overfitting_test.pdf)) is the full write-up. Every number in it is generated from `results/*.json`, so re-running the study and then the generator keeps the paper consistent:
+
+```bash
+PYTHONPATH="src:../paper-replication/src" python -m overfit_hmm.stats                # tests, by-year and by-period splits
+PYTHONPATH="src:../paper-replication/src" python -m overfit_hmm.make_latex_numbers   # writes paper/numbers.tex
+cd paper && tectonic overfitting_test.tex                                             # or pdflatex, run twice
+```

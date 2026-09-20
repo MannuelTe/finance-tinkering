@@ -1,0 +1,367 @@
+\documentclass[11pt]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{tikz}
+
+\definecolor{navy}{HTML}{17365D}
+\definecolor{muted}{HTML}{5B6573}
+\definecolor{lightblue}{HTML}{EEF3F8}
+\definecolor{testred}{HTML}{C0504D}
+\hypersetup{colorlinks=true,linkcolor=navy,citecolor=navy,urlcolor=navy,
+  pdftitle={Blocked Validation for Regime-Model Selection},
+  pdfauthor={Manuel T.}}
+\setlist{nosep,leftmargin=1.5em}
+\captionsetup{font=small,labelfont=bf}
+\graphicspath{{../results/}}
+\input{numbers.tex}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\pr}{\mathbb{P}}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Blocked Validation for Regime-Model Selection}
+\fancyhead[R]{\small Overfitting test}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14pt}
+
+\title{\textbf{Blocked Validation for Regime-Model Selection}\\
+\large A Purged Random-Block Overfitting Test of the Wasserstein Hidden Markov Model}
+\author{Manuel T.\thanks{AI assistance was used in creating this document.}}
+\date{September 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The Wasserstein hidden Markov model (HMM) allocation framework of \emph{Explainable Regime Aware Investing} re-chooses its number of hidden states $K$ at regular intervals by scoring candidate models on the most recent \ValidationDays{} trading days. A single recent window is one market episode, so the chosen $K$ may fit that episode rather than generalize. We replace this rule with purged random-block validation: the last \HoldoutDays{} days plus \RandomBlocks{} randomly placed \BlockLen{}-day blocks are held out, with \GapDays{}-day gaps removed on both sides of every block, and the HMM is trained on the remaining segments by Baum--Welch treated as separate sequences. We backtest both selectors from \OOSStart{} to \OOSEnd{} (\OOSObs{} days) over \NSeeds{} seeds. Blocked validation raises the mean gross Sharpe ratio from \SeedBaseSharpe{} to \SeedBlkSharpe{} (mean difference \DSharpeMean{}, 95\% confidence interval [\DSharpeLo{}, \DSharpeHi{}]; better in \SeedsBetter{} of \NSeeds{} seeds; paired $t=\TStat{}$, $p=\TP{}$), and a paired block bootstrap over days gives a 95\% interval of [\BootLoTwenty{}, \BootHiTwenty{}]. It also selects fewer states and switches less often, cutting turnover by \TurnoverCut{}. The effect is modest, concentrated in 2023--2026, and established on a single market history, so it shows robustness to the algorithm's own randomness rather than out-of-sample generality.
+\end{abstract}
+
+\noindent\textbf{Keywords:} hidden Markov model, model selection, purged cross-validation, overfitting, regime switching, Baum--Welch.
+
+\section{Introduction}
+
+Regime-aware allocation conditions portfolio decisions on a latent market state. The state model has hyperparameters, above all the number of states $K$, and these must themselves be chosen from data. In the framework we study \cite{boukardagha2026}, $K\in\{\CandidateStates{}\}$ is re-selected every \OrderFrequency{} trading days by fitting each candidate on all history except the newest \ValidationDays{} days and scoring it on those days. An independent implementation \cite{replicationpaper} showed that the architecture can be reproduced but not the published performance.
+
+This paper isolates one design choice, the validation split, and asks whether a better split changes the outcome. The concern is selection overfitting. The newest \ValidationDays{} days are a single episode of the market. A $K$ that happens to suit that episode is chosen even if it performs poorly elsewhere, and the choice then feeds every downstream portfolio decision until the next re-selection.
+
+The contribution is threefold:
+\begin{enumerate}
+  \item a validation scheme for time-series HMMs that combines random test blocks, the most recent days, and purged gaps, with Baum--Welch estimation that respects the discontinuities between training segments (Sections~\ref{sec:hmm} and~\ref{sec:blocked});
+  \item a paired, multi-seed comparison against the original rule over a longer sample starting in 2019 (Section~\ref{sec:design}); and
+  \item two separate statistical tests, one for algorithmic randomness and one for sampling noise in the single available market history, with an explicit statement of what each does and does not establish (Section~\ref{sec:results}).
+\end{enumerate}
+
+\section{The Hidden Markov Model}\label{sec:hmm}
+
+\subsection{Markov chain and emissions}
+
+The regime $s_t\in\{1,\dots,K\}$ is never observed. It follows a first-order Markov chain with transition matrix $A$ and initial distribution $\pi$:
+\begin{equation}
+\pr(s_t=j\mid s_{t-1}=i,\,s_{t-2},\dots)=\pr(s_t=j\mid s_{t-1}=i)=A_{ij},\qquad \sum_{j}A_{ij}=1,\qquad \pi_i=\pr(s_1=i).
+\end{equation}
+Only the current regime matters for tomorrow. A large diagonal entry $A_{ii}$ means regimes persist, with expected duration $1/(1-A_{ii})$ days, which is what makes regimes usable for allocation. Given the regime, the standardized \FeatureDim{}-dimensional feature vector $x_t$ (lagged returns, \VolWindow{}-day volatility, and \MomWindow{}-day momentum of the five sleeves) is Gaussian:
+\begin{equation}
+x_t\mid s_t=i\;\sim\;\mathcal N(\mu_i,\Sigma_i).
+\end{equation}
+The parameters are $\theta=(\pi,A,\{\mu_i,\Sigma_i\}_{i=1}^{K})$, and their number, approximately $K\bigl(d+d(d+1)/2\bigr)+K^2$ with $d=\FeatureDim{}$, grows quickly with $K$.
+
+\subsection{Bayes update: the filter}
+
+Let $\alpha_t(i)=\pr(s_t=i\mid x_{1:t})$ be the belief about today's regime given data through $t$. Each day it is updated in two steps,
+\begin{equation}
+\bar\alpha_t(j)=\sum_{i}\alpha_{t-1}(i)\,A_{ij},
+\qquad
+\alpha_t(j)=\frac{\bar\alpha_t(j)\,\mathcal N(x_t;\mu_j,\Sigma_j)}{\sum_{l}\bar\alpha_t(l)\,\mathcal N(x_t;\mu_l,\Sigma_l)}.
+\label{eq:filter}
+\end{equation}
+The first step pushes yesterday's belief through the Markov chain to obtain a prior. The second applies Bayes' rule, posterior $\propto$ prior $\times$ likelihood. The filter uses only information through $t$, so it is causal. Its normalizer is the one-step predictive density $p(x_t\mid x_{1:t-1})$, and the sum of its logarithms is the log-likelihood of the sequence,
+\begin{equation}
+\log p(x_{1:T}\mid\theta)=\sum_{t=1}^{T}\log p(x_t\mid x_{1:t-1};\theta),
+\label{eq:loglik}
+\end{equation}
+which is the quantity used for model selection below.
+
+\subsection{Baum--Welch}
+
+Because $s_t$ is hidden, the parameters are learned by expectation--maximization \cite{baum1970,dempster1977,rabiner1989}. The E-step combines the forward probabilities $\alpha_t$ from~\eqref{eq:filter} with backward probabilities $\beta_t(i)=p(x_{t+1:T}\mid s_t=i)$ to compute the smoothed state and transition posteriors
+\begin{equation}
+\gamma_t(i)=\frac{\alpha_t(i)\beta_t(i)}{\sum_{l}\alpha_t(l)\beta_t(l)},
+\qquad
+\xi_t(i,j)\;\propto\;\alpha_t(i)\,A_{ij}\,\mathcal N(x_{t+1};\mu_j,\Sigma_j)\,\beta_{t+1}(j).
+\end{equation}
+The M-step re-estimates the parameters from these soft counts,
+\begin{equation}
+\hat A_{ij}=\frac{\sum_{t=1}^{T-1}\xi_t(i,j)}{\sum_{t=1}^{T-1}\gamma_t(i)},\quad
+\hat\mu_i=\frac{\sum_t\gamma_t(i)x_t}{\sum_t\gamma_t(i)},\quad
+\hat\Sigma_i=\frac{\sum_t\gamma_t(i)(x_t-\hat\mu_i)(x_t-\hat\mu_i)^{\top}}{\sum_t\gamma_t(i)},\quad
+\hat\pi_i=\gamma_1(i).
+\end{equation}
+Each iteration cannot decrease the likelihood, so the procedure converges to a local optimum; a fixed seed and an iteration cap (\HMMIterations{} here) make it reproducible.
+
+\subsection{Baum--Welch on separate segments}
+
+After purging, the training data are $M$ disjoint segments rather than one series. Concatenating them would create false transitions across each gap, with the chain appearing to jump between years in one day, and would corrupt $\hat A$. The segments are therefore treated as $M$ independent sequences. The E-step runs forward--backward within each segment, and the M-step sums the soft counts over segments,
+\begin{equation}
+\hat A_{ij}=\frac{\sum_{m=1}^{M}\sum_{t}\xi^{(m)}_t(i,j)}{\sum_{m=1}^{M}\sum_{t}\gamma^{(m)}_t(i)},
+\end{equation}
+with $\hat\pi$ estimated from the segment starts. No transition across a gap is ever counted.
+
+\section{Blocked Validation}\label{sec:blocked}
+
+\subsection{Layout}
+
+Let $n$ be the length of the available history at a re-selection date. The original rule holds out the last $\ValidationDays{}$ days. The proposed rule builds the layout in Figure~\ref{fig:layout}. The last \HoldoutDays{} days are always a test block, \RandomBlocks{} further test blocks of \BlockLen{} days are placed uniformly at random, and \GapDays{} days are removed on both sides of every test block. Everything left over is training data. A random layout is accepted only if every training segment has at least \MinSegment{} observations, so the HMM always sees a usable stretch of history, and the draw is repeated otherwise. The layout is a deterministic function of the seed and the history length. Runs are therefore reproducible, yet the layout changes each time the history grows, so no single lucky layout drives the selection.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[x=0.092cm,y=0.5cm,font=\footnotesize]
+  \definecolor{trainc}{HTML}{DCE6F1}
+  \fill[trainc] (0,0) rectangle (24,1);
+  \fill[testred!60] (27,0) rectangle (39,1);
+  \fill[trainc] (42,0) rectangle (78,1);
+  \fill[testred!60] (81,0) rectangle (93,1);
+  \fill[trainc] (96,0) rectangle (112,1);
+  \fill[testred!60] (115,0) rectangle (127,1);
+  \fill[trainc] (130,0) rectangle (140,1);
+  \fill[testred!60] (143,0) rectangle (155,1);
+  \foreach \a/\b in {24/27,39/42,78/81,93/96,112/115,127/130,140/143}{
+    \fill[muted!30] (\a,0) rectangle (\b,1);}
+  \draw[thick] (0,0) rectangle (155,1);
+  \node at (12,0.5) {train};
+  \node at (33,0.5) {TEST};
+  \node at (60,0.5) {train};
+  \node at (87,0.5) {TEST};
+  \node at (104,0.5) {train};
+  \node at (121,0.5) {TEST};
+  \node at (135,0.5) {tr.};
+  \node at (149,0.5) {TEST};
+  \node[muted] at (25.5,-0.55) {gap};
+  \node[muted] at (79.5,-0.55) {gap};
+  \node[muted] at (141.5,-0.55) {gap};
+  \node[anchor=west] at (157,0.5) {today};
+  \draw[<->] (143,1.6) -- (155,1.6) node[midway,above] {last \HoldoutDays{} days};
+\end{tikzpicture}
+\caption{Purged random-block layout at one re-selection date (schematic; the number of blocks and their sizes are as in the text). Blue: training segments; red: test blocks; grey: purged gaps. Every test block is surrounded by a gap on both sides, and the final block ends at the present.}
+\label{fig:layout}
+\end{figure}
+
+\subsection{Why a gap of \GapDays{} days}
+
+The feature $x_t$ contains a \VolWindow{}-day rolling volatility computed from returns on days $t-\VolWindow{}$ to $t-1$. Two feature vectors $x_s$ and $x_t$ therefore share inputs whenever $|s-t|\le \VolWindow{}-1$. With a gap of \GapDays{} days, the nearest training day to a test block is at distance $\GapDays{}+1$ from the block's edge, so no training feature shares any input return with any test feature. Without a gap, days just after a test block would be near copies of the days being tested, inflating the score. This is the idea of purging in financial cross-validation \cite{lopezdeprado2018}, related to the $h$-block and $hv$-block methods for dependent data \cite{racine2000}. A purge of at least the feature window removes the mechanical overlap; it cannot remove slower dependence, such as regime persistence, which is the reason for also using several separated blocks.
+
+\subsection{Scoring and the absence of look-ahead}
+
+Let $\mathcal S_{\text{train}}$ and $\mathcal S_{\text{test}}$ be the two sets of segments, with $N_{\text{test}}$ test days in total. The HMM with $K$ states is fit on $\mathcal S_{\text{train}}$ by the multi-sequence Baum--Welch of Section~\ref{sec:hmm}, and each test block is scored separately by the forward algorithm started from $\hat\pi$. The selection score is the held-out log-likelihood per day~\eqref{eq:loglik} minus a complexity penalty,
+\begin{equation}
+\begin{aligned}
+\operatorname{score}(K)&=\frac{1}{N_{\text{test}}}\sum_{m\in\mathcal S_{\text{test}}}\log p\bigl(x^{(m)}\mid\hat\theta_K\bigr)\;-\;\lambda\,\#\mathrm{params}(K),
+\qquad \lambda=\ComplexityPenalty{},\\
+K^\star&=\argmax_{K}\operatorname{score}(K),
+\end{aligned}
+\end{equation}
+where $\lambda$ and the penalty form are those of the original rule. A model that memorizes one episode scores well there but poorly on the other blocks, so averaging over separated blocks penalizes it. The feature scaler is fit on the training segments only, so nothing from the test blocks leaks into the standardization. Each block starts from $\hat\pi$ rather than a warmed-up belief, which scores its first few days slightly pessimistically for all $K$ alike.
+
+All blocks, random or not, lie inside the history that ends the day before the decision date. Training on data that is later than a random test block is acceptable here because the object being chosen is a hyperparameter, not a forecast of that block, and the decision date lies after everything used. After $K^\star$ is chosen the model is refit on all history, exactly as in the original procedure.
+
+\section{Experimental Design}\label{sec:design}
+
+\paragraph{Data and pipeline.} We use the five sleeves and adjusted-close data of the replication \cite{replicationpaper}, with the same features, Wasserstein templates, filtered-posterior moments, mean--variance optimizer and cost treatment. The only difference between the two arms is the order selector. The out-of-sample period starts on \OOSStart{} rather than 2023-06-02 and ends on \OOSEnd{} (\OOSObs{} days), so the selector is exercised through the 2020 crash and the 2022 drawdown. Models are refit every \RefitFrequency{} days and $K$ is re-selected every \OrderFrequency{} days. Returns are reported gross of costs; the arm that trades less would keep somewhat more after the \CostBps{} basis-point cost.
+
+\paragraph{Seeds and pairing.} A seed controls both the HMM initialization and the random block layout. Both arms are run with the same seed, for seeds $1,\dots,\NSeeds{}$, so every comparison is paired. All settings (\BlockLen{}-day blocks, \RandomBlocks{} random blocks, \GapDays{}-day gap, \MinSegment{}-day minimum segment) were fixed before any run and were not tuned.
+
+\paragraph{Two sources of uncertainty, two tests.} There is only one market history, so we separate two questions.
+\begin{description}[style=nextline]
+  \item[Robustness to algorithmic randomness.] With $\Delta_s=\text{Sharpe}^{\text{blocked}}_s-\text{Sharpe}^{\text{original}}_s$ for seed $s$, we apply a paired $t$-test and a Wilcoxon signed-rank test \cite{wilcoxon1945} to $\{\Delta_s\}$, and report the mean with a $t$-based 95\% interval.
+  \item[Robustness to the market sample.] We average the daily returns of each arm over the \NSeeds{} seeds, which removes seed noise, and apply a paired circular block bootstrap \cite{politisromano1992}: the same resampled days are used for both arms, blocks of 10, 20 and 60 days accommodate autocorrelation and volatility clustering, and we form a percentile interval for the Sharpe difference and a two-sided $p$-value from the centred bootstrap distribution. Sharpe differences are the natural target here \cite{ledoitwolf2008}.
+\end{description}
+
+\section{Results}\label{sec:results}
+
+\subsection{A single seed is not enough}
+
+Table~\ref{tab:single} shows seed \SingleSeed{}. Blocked validation looks better, but the paired $t$-statistic of the daily return difference is only \OneSeedT{}, and the Sharpe ratio of the original selector alone ranges from \SeedBaseSharpeMin{} to \SeedBaseSharpeMax{} across seeds (Table~\ref{tab:multi}), so one seed cannot settle the question.
+
+\begin{table}[H]
+\centering
+\caption{Single seed (\SingleSeed{}), \OOSStart{} to \OOSEnd{}, gross of costs.}
+\label{tab:single}
+\begin{tabular}{lcc}
+\toprule
+ & Original & Blocked \\
+\midrule
+Sharpe ratio & \OneBaseSharpe{} & \OneBlkSharpe{} \\
+Total return & \OneBaseReturn{} & \OneBlkReturn{} \\
+Maximum drawdown & \OneBaseMaxDD{} & \OneBlkMaxDD{} \\
+One-way turnover per day & \OneBaseTurnover{} & \OneBlkTurnover{} \\
+Selections of $K$ (\OneBaseNSelections{} in total) & \parbox[t]{0.24\linewidth}{\centering\OneBaseKCounts{}} & \parbox[t]{0.24\linewidth}{\centering\OneBlkKCounts{}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Thirty seeds}
+
+Table~\ref{tab:multi} averages over the \NSeeds{} seeds and Table~\ref{tab:tests} gives the tests. Blocked validation is better by \DSharpeMean{} Sharpe on average, in \SeedsBetter{} of \NSeeds{} seeds, and both tests across seeds reject equal performance at the 1\% level. The paired block bootstrap on the seed-averaged returns excludes zero for every block length tried, so the gain is not just the effect of a few days in this particular history. Figure~\ref{fig:multiseed} shows the per-seed Sharpe ratios and the distribution of the differences.
+
+\begin{table}[H]
+\centering
+\caption{Averages over \NSeeds{} seeds, gross of costs.}
+\label{tab:multi}
+\begin{tabular}{lcc}
+\toprule
+ & Original (last \ValidationDays{} days) & Blocked validation \\
+\midrule
+Sharpe ratio, mean & \SeedBaseSharpe{} & \SeedBlkSharpe{} \\
+Sharpe ratio, standard deviation across seeds & \SeedBaseSharpeSD{} & \SeedBlkSharpeSD{} \\
+Maximum drawdown, mean & \SeedBaseMaxDD{} & \SeedBlkMaxDD{} \\
+One-way turnover per day, mean & \SeedBaseTurnover{} & \SeedBlkTurnover{} \\
+Changes of the selected $K$ per run, mean & \SeedBaseSwitches{} & \SeedBlkSwitches{} \\
+Selected $K$, mean & \SeedBaseMeanK{} & \SeedBlkMeanK{} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\caption{Tests of $\Delta=\text{Sharpe}^{\text{blocked}}-\text{Sharpe}^{\text{original}}$.}
+\label{tab:tests}
+\begin{tabular}{p{0.52\linewidth}p{0.38\linewidth}}
+\toprule
+Test & Result \\
+\midrule
+\multicolumn{2}{l}{\emph{Across seeds (algorithmic randomness)}}\\
+Mean $\Delta$, 95\% interval & \DSharpeMean{}, [\DSharpeLo{}, \DSharpeHi{}] \\
+Range of $\Delta$ over seeds & [\DSharpeMin{}, \DSharpeMax{}] \\
+Seeds where blocked is better & \SeedsBetter{} of \NSeeds{} (\SeedsBetterShare{}) \\
+Paired $t$-test & $t=\TStat{}$, $p=\TP{}$ \\
+Wilcoxon signed-rank & $p=\WilcoxonP{}$ \\
+\midrule
+\multicolumn{2}{l}{\emph{Over days (market sample), seed-averaged returns}}\\
+Ensemble Sharpe, original / blocked & \EnsBaseSharpe{} / \EnsBlkSharpe{} ($\Delta=\EnsDiff{}$) \\
+Block bootstrap, 10-day blocks & [\BootLoTen{}, \BootHiTen{}], $p=\BootPTen{}$ \\
+Block bootstrap, 20-day blocks & [\BootLoTwenty{}, \BootHiTwenty{}], $p=\BootPTwenty{}$ \\
+Block bootstrap, 60-day blocks & [\BootLoSixty{}, \BootHiSixty{}], $p=\BootPSixty{}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.94\linewidth]{multiseed.png}
+\caption{Left: per-seed Sharpe ratios of the two selectors (grey lines join the same seed). Right: distribution of the per-seed difference, blocked minus original; the vertical line marks zero.}
+\label{fig:multiseed}
+\end{figure}
+
+\subsection{Where the gain comes from}
+
+Table~\ref{tab:byyear} reports the Sharpe ratio of the seed-averaged returns by calendar year. Before 2023 the two selectors are almost indistinguishable, and 2022 is strongly negative for both. The advantage appears in 2020 and again in 2024--2026. Splitting the seeds by period, the mean difference is \EarlyD{} in 2019--2022 (paired $t=\EarlyT{}$, blocked better in \EarlyShare{} of seeds) and \LateD{} in 2023--2026 ($t=\LateT{}$, \LateShare{} of seeds). The evidence therefore rests mostly on the later years, and the earlier years neither confirm nor contradict it.
+
+\begin{table}[H]
+\centering
+\caption{Sharpe ratio of the seed-averaged returns by calendar year (2026 covers only the first weeks of the year).}
+\label{tab:byyear}
+\begin{tabular}{lccc}
+\toprule
+Year & Original & Blocked & Difference \\
+\midrule
+\ByYearRows
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Selection behaviour}
+
+Blocked validation chooses fewer states (mean $K$ of \SeedBlkMeanK{} against \SeedBaseMeanK{}) and revises its choice less often (\SeedBlkSwitches{} changes per run against \SeedBaseSwitches{}). Turnover falls by about \TurnoverCut{}. Figure~\ref{fig:orders} shows the single-seed path. This pattern is consistent with the explanation that a single recent window rewards more complex models that then fail to hold up, but this study does not isolate that mechanism.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\linewidth]{orders.png}
+\caption{Single seed (\SingleSeed{}): growth of one unit (top) and selected $K$ over time (bottom) for the two selectors.}
+\label{fig:orders}
+\end{figure}
+
+\section{Limitations}
+
+\begin{itemize}
+  \item \textbf{The tests are not on independent market data.} The seeds are repeats on one history, so $p=\TP{}$ says the gain is robust to the algorithm's own randomness, not that it will persist. The bootstrap addresses sampling noise in the history, but block bootstraps of about seven years of one market are only approximate, and the regimes in the sample are few.
+  \item \textbf{Ensemble averaging sharpens the bootstrap.} Averaging \NSeeds{} seeds removes seed noise, so the ensemble Sharpe difference (\EnsDiff{}) is more precise than any single run's. It corresponds to holding the average of \NSeeds{} portfolios, not one.
+  \item \textbf{One configuration.} Block length, block count, gap and minimum segment were set once and not varied, so the result may depend on them.
+  \item \textbf{Scope.} Nothing here shows that either method beats a passive portfolio. The question was only which validation scheme is better for choosing $K$, and the gain, about \RelGain{} in relative Sharpe with \SeedsWorse{} of \NSeeds{} seeds going the other way, is modest.
+  \item \textbf{Gross returns.} The comparison is gross of costs. The blocked arm trades less and would gain slightly after costs.
+\end{itemize}
+
+\section{Conclusion}
+
+Choosing the number of HMM states on the latest \ValidationDays{} days is a noisy, single-episode judge. Replacing it with purged random blocks, and training the HMM on the remaining segments as separate sequences, produced a more stable choice of $K$, lower turnover, and a mean Sharpe ratio higher by \DSharpeMean{} over \NSeeds{} paired seeds, with intervals that exclude zero both across seeds and under a block bootstrap over days. The gain is modest, concentrated in 2023--2026, and demonstrated on one market history, so it supports adopting blocked validation as a more defensible default rather than establishing a new source of performance. Repeating the study on other markets and varying the block settings are the natural next checks.
+
+\section*{Reproducibility}
+
+All numbers in this paper are generated from the JSON results in \texttt{results/} by \texttt{make\_latex\_\allowbreak numbers.py}. The single-seed run, the \NSeeds{}-seed run and the statistical tests are the modules \texttt{run}, \texttt{multiseed} and \texttt{stats} of the \texttt{overfit\_hmm} package. The splitter and selector have offline unit tests.
+
+\begin{thebibliography}{99}
+
+\bibitem{boukardagha2026}
+A. Boukardagha.
+\newblock Explainable Regime Aware Investing.
+\newblock \emph{arXiv preprint arXiv:2603.04441}, 2026.
+
+\bibitem{replicationpaper}
+M. T.
+\newblock Reproducing Explainable Regime-Aware Investing: An independent implementation and reproducibility audit.
+\newblock Companion paper in \texttt{paper-replication/paper}, 2026.
+
+\bibitem{baum1970}
+L. E. Baum, T. Petrie, G. Soules, and N. Weiss.
+\newblock A maximization technique occurring in the statistical analysis of probabilistic functions of Markov chains.
+\newblock \emph{Annals of Mathematical Statistics}, 41(1):164--171, 1970.
+
+\bibitem{dempster1977}
+A. P. Dempster, N. M. Laird, and D. B. Rubin.
+\newblock Maximum likelihood from incomplete data via the EM algorithm.
+\newblock \emph{Journal of the Royal Statistical Society: Series B}, 39(1):1--38, 1977.
+
+\bibitem{rabiner1989}
+L. R. Rabiner.
+\newblock A tutorial on hidden Markov models and selected applications in speech recognition.
+\newblock \emph{Proceedings of the IEEE}, 77(2):257--286, 1989.
+
+\bibitem{lopezdeprado2018}
+M. L\'opez de Prado.
+\newblock \emph{Advances in Financial Machine Learning}.
+\newblock Wiley, 2018.
+
+\bibitem{racine2000}
+J. Racine.
+\newblock Consistent cross-validatory model-selection for dependent data: $hv$-block cross-validation.
+\newblock \emph{Journal of Econometrics}, 99(1):39--61, 2000.
+
+\bibitem{politisromano1992}
+D. N. Politis and J. P. Romano.
+\newblock A circular block-resampling procedure for stationary data.
+\newblock In R. LePage and L. Billard, editors, \emph{Exploring the Limits of Bootstrap}, pages 263--270. Wiley, 1992.
+
+\bibitem{ledoitwolf2008}
+O. Ledoit and M. Wolf.
+\newblock Robust performance hypothesis testing with the Sharpe ratio.
+\newblock \emph{Journal of Empirical Finance}, 15(5):850--859, 2008.
+
+\bibitem{wilcoxon1945}
+F. Wilcoxon.
+\newblock Individual comparisons by ranking methods.
+\newblock \emph{Biometrics Bulletin}, 1(6):80--83, 1945.
+
+\end{thebibliography}
+
+\end{document}
