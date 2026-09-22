@@ -1,0 +1,8 @@
+# Vendor data: Bloomberg licence forbids redistribution. Never commit raw or derived-at-row-level pulls.
+data/raw/*
+!data/raw/.gitkeep
+data/cache/
+
+# Personal pull notes/process (institution, past mistakes, formulas) - keep out of the public repo.
+docs/bloomberg-pull.md
+docs/data-pull-checklist.md
