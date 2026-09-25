@@ -1,10 +1,10 @@
 # TaxHarvest
 
-Given a portfolio **P** with a return distribution **F_P**, pick the smallest sub-portfolio
-**S** of tax lots to sell at a loss, such that:
+Given a portfolio $P$ with a return distribution $F_P$, pick the smallest sub-portfolio
+$S$ of tax lots to sell at a loss, such that:
 
-* the realised loss **L** reaches a target **K = tax rate × E[gains]** with a chosen
-  confidence, **P(L ≥ K) = α**, and
+* the realised loss $L$ reaches a target $K = \tau \, \mathbb{E}[G]$ (tax rate times expected
+  gains) with a chosen confidence, $\mathbb{P}(L \ge K) = \alpha$, and
 * no sale breaks the **US wash-sale rule** (IRC §1091) or the **Canadian superficial-loss
   rule** (ITA s.54). Each sold lot is swapped into a correlated asset that is not
   "substantially identical", and the original can be bought back after 31 days.
@@ -17,55 +17,65 @@ robustness suite, CLI and four worked examples all work, and 12 tests pass. Resu
 
 ## The problem
 
-Draw N scenarios of prices at the harvest date from F_P. For lot *i* in scenario *s* the loss
-if sold is `l[i,s] = shares_i · max(0, basis_i − price_i,s)`. A plan `x ∈ [0,1]^n` is a set of
-conditional orders: *on the harvest date, sell fraction x_i of lot i if it is below its
-basis*. The plan realises `L_s = Σ x_i l[i,s]`.
+Draw $N$ scenarios of prices at the harvest date from $F_P$. For lot $i$ with $q_i$ shares
+and cost basis $b_i$, the loss if sold in scenario $s$ (price $p_{i,s}$) is
 
-```
-minimise    Σ_i x_i · value_i · (1 + λ(1 − ρ_i))          size of S + tracking penalty
-subject to  P(L ≥ K) ≥ α                                   chance constraint
-            x_i = 0 for every lot the wash-sale screen blocks
+```math
+\ell_{i,s} = q_i \, \max\left(0,\; b_i - p_{i,s}\right)
 ```
 
-`ρ_i` is the correlation to the best replacement the rules allow. `K` is `τ·E[G]`: the tax
-rate times the expected gain base (gains realised this year plus P's expected dollar return
-over the horizon). `--target offset` uses `K = E[G]` instead, which is enough loss to cancel
-that tax entirely. `--target 5000` sets a fixed amount.
+A plan $x \in [0,1]^n$ is a set of conditional orders: on the harvest date, sell fraction
+$x_i$ of lot $i$ if it is below its basis. The plan realises $L_s = \sum_i x_i \, \ell_{i,s}$ and
+solves
+
+```math
+\begin{aligned}
+\min_{x \in [0,1]^n} \quad & \sum_i x_i \, v_i \,\bigl(1 + \lambda\,(1 - \rho_i)\bigr)
+  && \text{size of } S \text{ plus tracking penalty} \\
+\text{s.t.} \quad & \mathbb{P}(L \ge K) \ge \alpha && \text{chance constraint} \\
+& x_i = 0 && \text{for every lot the wash-sale screen blocks}
+\end{aligned}
+```
+
+$v_i$ is the lot's market value and $\rho_i$ the correlation to the best replacement the rules
+allow. The target is $K = \tau \, \mathbb{E}[G]$: the tax rate $\tau$ times the expected gain base $G$
+(gains realised this year plus $P$'s expected dollar return over the horizon).
+`--target offset` uses $K = \mathbb{E}[G]$ instead, which is enough loss to cancel that tax
+entirely. `--target 5000` sets a fixed amount.
 
 | Method | Constraint | Outcome |
 |---|---|---|
-| `mean` | E[L] = K | P(L ≥ K) ≈ 50%: hitting the mean exactly is a coin flip |
-| `cvar` | CVaR_α(K − L) ≤ 0 (LP) | Conservative: 94–96% instead of 90%, and infeasible in some cases where the chance constraint is not |
-| **`calibrated`** (default) | CVaR LP at the smallest level α′ whose solution still gives P(L ≥ K) ≥ α (regula-falsi search) | Hits α exactly in-sample, holds out of sample, smallest S of the convex methods |
+| `mean` | $\mathbb{E}[L] = K$ | $\mathbb{P}(L \ge K) \approx$ 50%: hitting the mean exactly is a coin flip |
+| `cvar` | $\mathrm{CVaR}_\alpha(K - L) \le 0$ (LP) | Conservative: 94–96% instead of 90%, and infeasible in some cases where the chance constraint is not |
+| **`calibrated`** (default) | CVaR LP at the smallest level $\alpha'$ whose solution still gives $\mathbb{P}(L \ge K) \ge \alpha$ (regula-falsi search) | Hits $\alpha$ exactly in-sample, holds out of sample, smallest $S$ of the convex methods |
 | `milp` | exact chance constraint, one binary per scenario | Exact on its subsample; slower, and generalises no better than `calibrated` |
 
 Setting `ambiguity` makes the plan hold under every model in a set of alternative
 distributions (distributionally robust).
 
-### Return model F_P
+### Return model $F_P$
 
 * **Factor model** (default): 6 broad factors (US, CA, international and EM equity, bonds,
   gold) plus 8 sector factors, with a beta and idiosyncratic vol for each asset. The
   parameters in [`assets.csv`](src/taxharvest/assets.csv) are round illustrative numbers, not
   estimates.
 * **Learned regime model** (`--history prices.csv`): a Gaussian hidden Markov model. It is
-  initialised from EM-fitted Gaussian mixtures, trained with Baum–Welch, and k is chosen by
+  initialised from EM-fitted Gaussian mixtures, trained with Baum–Welch, and $k$ is chosen by
   BIC. Regime persistence is what makes losses cluster over a multi-week horizon.
 * Student-t and bootstrap models are available for stress tests.
 
 ### Wash-sale / superficial-loss screen
 
-For a sale on day H the screen blocks a lot when:
+For a sale on day $H$ the screen blocks a lot when:
 
 | Check | US | Canada |
 |---|---|---|
 | Lot is in a sheltered account (IRA, Roth, 401k, RRSP, TFSA, …) | blocked | blocked |
-| Same-group purchase in [H−30, H], in **any** account | blocked, incl. IRA (Rev. Rul. 2008-5) and spouse | blocked, incl. affiliated persons (spouse) and RRSP/TFSA |
-| Planned purchase of the same group in [H−30, H+30] | blocked | blocked |
+| Same-group purchase in $[H-30,\, H]$, in **any** account | blocked, incl. IRA (Rev. Rul. 2008-5) and spouse | blocked, incl. affiliated persons (spouse) and RRSP/TFSA |
+| Planned purchase of the same group in $[H-30,\, H+30]$ | blocked | blocked |
 | DRIP on any same-group lot | blocked ("switch it off") | blocked |
 | Replacement | different group, and not a group being harvested | same |
-| Buy-back | from H+31 | from H+31 (the rule tests holding at the end of day 30) |
+| Buy-back | from $H+31$ | from $H+31$ (the rule tests holding at the end of day 30) |
 
 "Same group" means same index: VOO/IVV/SPY/VFV/ZSP/XUS are all `SP500`, and XIC/ZCN are both
 `TSX_CAPPED`. Neither tax authority publishes a list of what counts as substantially
