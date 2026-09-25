@@ -1,6 +1,6 @@
 # Finance Tinkering
 
-*Last updated: 2026-09-20*
+*Last updated: 2026-09-25*
 
 Pet projects around fintech, trading and quantitative research. Each folder is self-contained
 (own README, dependencies and tests where applicable).
@@ -9,6 +9,8 @@ Pet projects around fintech, trading and quantitative research. Each folder is s
 |---|---|
 | [`harness/`](harness) | Support tools and artefacts. |
 | [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test whose blocked-validation fix gave a modest but statistically robust improvement. |
+| [`market-surveillance/`](market-surveillance) | Pre-announcement insider-dealing screen (event study) and a MiFIR RTS 22 transaction-report validator with ARM reconciliation; Bloomberg pull spec included. |
+| [`TaxHarvest/`](TaxHarvest) | Chance-constrained tax-loss harvesting: picks the smallest sub-portfolio whose losses reach tax rate × expected gains with a chosen confidence, under the US wash-sale and Canadian superficial-loss rules. Learned regime model (HMM), Monte Carlo robustness tests, CLI, animations. |
 | [`beta-scanner/`](beta-scanner) | Beta of a stock vs SPY / RSP (equal-weight) and an S&P 500 mid-cap scanner for names where the two betas diverge; early notebooks. |
 | [`notes/`](notes) | Research notes (e.g. how to gauge the impact of the regime-investing paper). |
 | [`archive/`](archive) | Old standalone SPY overnight research script (read-only IBKR, no order submission). |

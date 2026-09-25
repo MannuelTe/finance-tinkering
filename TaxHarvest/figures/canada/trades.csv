@@ -1,0 +1,13 @@
+lot,account,ticker,acquired,value,unrealized,eligible,sell_frac,sell_shares,E[loss],P(in loss),replace_with,corr,buy_back_from,why_not
+0,taxable,XIC,2025-10-06,19100.0,-950.0,False,0.0,0.0,0.0,,,,,planned buy of ZCN on 2026-11-15 in spouse_taxable
+1,taxable,VFV,2026-02-11,28200.0,-1800.0,False,0.0,0.0,0.0,,,,,DRIP on XUS in tfsa: switch it off
+2,taxable,XEF,2025-06-02,22500.0,-1500.0,True,0.0,0.0,0.0,0.8251,,,,
+3,taxable,ZAG,2023-05-01,11120.0,-560.0,True,0.0,0.0,0.0,0.9625,,,,
+4,taxable,SHOP,2025-11-03,8520.0,-1080.0,True,0.0,0.0,0.0,0.7365,,,,
+5,taxable,ENB,2024-01-15,18600.0,1200.0,True,0.0,0.0,0.0,0.1878,,,,
+6,taxable,RY,2023-03-01,27750.0,5250.0,True,0.0,0.0,0.0,0.0032,,,,
+7,taxable,BCE,2024-02-01,13200.0,-7600.0,True,0.9732,389.2738,7288.541505652684,1.0,XIC,0.38687735182415556,2026-12-22,
+8,taxable,CNQ,2025-05-20,8700.0,-500.0,True,0.0,0.0,0.0,0.6665,,,,
+9,taxable,TD,2025-02-10,18000.0,1600.0,True,0.0,0.0,0.0,0.1281,,,,
+10,rrsp,VUN,2024-09-01,35400.0,6900.0,False,0.0,0.0,0.0,,,,,sheltered account (rrsp): loss not deductible
+11,tfsa,XUS,2025-01-01,7800.0,600.0,False,0.0,0.0,0.0,,,,,sheltered account (tfsa): loss not deductible; DRIP on this lot: switch it off

@@ -1,0 +1,16 @@
+account,ticker,shares,cost_basis,acquired,price,drip
+taxable,VOO,60.0,612.0,2025-12-10,575.0,False
+taxable,VTI,120.0,318.0,2025-11-20,292.0,False
+taxable,QQQ,30.0,540.0,2026-01-15,548.0,False
+taxable,VEA,400.0,58.0,2025-07-01,53.0,False
+taxable,VWO,300.0,47.0,2026-03-03,45.5,False
+taxable,BND,200.0,74.0,2024-05-14,72.5,False
+taxable,AAPL,50.0,190.0,2023-06-01,228.0,False
+taxable,NVDA,40.0,95.0,2023-02-01,172.0,False
+taxable,INTC,500.0,34.0,2024-03-01,22.0,True
+taxable,NKE,150.0,98.0,2024-08-01,72.0,False
+taxable,PFE,500.0,30.0,2025-01-10,25.0,False
+taxable,DIS,200.0,118.0,2025-03-12,96.0,False
+taxable,XOM,100.0,125.0,2025-04-02,112.0,False
+taxable,JPM,60.0,205.0,2024-10-01,290.0,False
+ira,IVV,100.0,500.0,2024-06-01,575.0,False
