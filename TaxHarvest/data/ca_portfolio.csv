@@ -1,0 +1,13 @@
+account,ticker,shares,cost_basis,acquired,price,drip
+taxable,XIC,500.0,40.1,2025-10-06,38.2,False
+taxable,VFV,200.0,150.0,2026-02-11,141.0,False
+taxable,XEF,600.0,40.0,2025-06-02,37.5,False
+taxable,ZAG,800.0,14.6,2023-05-01,13.9,False
+taxable,SHOP,60.0,160.0,2025-11-03,142.0,False
+taxable,ENB,300.0,58.0,2024-01-15,62.0,False
+taxable,RY,150.0,150.0,2023-03-01,185.0,False
+taxable,BCE,400.0,52.0,2024-02-01,33.0,False
+taxable,CNQ,200.0,46.0,2025-05-20,43.5,False
+taxable,TD,200.0,82.0,2025-02-10,90.0,False
+rrsp,VUN,300.0,95.0,2024-09-01,118.0,False
+tfsa,XUS,150.0,48.0,2025-01-01,52.0,True

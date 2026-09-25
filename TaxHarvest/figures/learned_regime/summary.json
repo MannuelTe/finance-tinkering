@@ -1,0 +1,239 @@
+{
+  "jurisdiction": "US",
+  "harvest_on": "2026-11-21",
+  "tax_rate": 0.238,
+  "target_mode": "tax",
+  "E[gain base]": 14520.282820406466,
+  "target K": 3455.827311256739,
+  "confidence (target)": 0.9,
+  "P(L >= K) in-sample": 0.9007,
+  "E[L]": 7077.50039024821,
+  "L 5/50/95%": [
+    2589.082439796276,
+    6831.405884292754,
+    12585.529693089244
+  ],
+  "E[tax saved]": 1070.7098062603552,
+  "sub-portfolio value": 43612.31801763774,
+  "sub-portfolio share of P": 0.14874089566398738,
+  "tracking error 31d ($, 1sd)": 1005.2130323348165,
+  "status": "optimal",
+  "seconds": 9.63,
+  "frontier": [
+    {
+      "alpha": 0.5,
+      "K": 3370.589761784076,
+      "confidence": 0.5002,
+      "E[L]": 3526.87321331404,
+      "E[tax saved]": 535.7873774880228,
+      "sub-portfolio value": 27799.565869146594,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.6,
+      "K": 3370.589761784076,
+      "confidence": 0.6014,
+      "E[L]": 4030.3424659035713,
+      "E[tax saved]": 613.9916376647699,
+      "sub-portfolio value": 29301.499895608882,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.7,
+      "K": 3370.589761784076,
+      "confidence": 0.7016,
+      "E[L]": 4689.027007584796,
+      "E[tax saved]": 710.1597047701766,
+      "sub-portfolio value": 32131.316088172294,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.8,
+      "K": 3370.589761784076,
+      "confidence": 0.801,
+      "E[L]": 5554.201044729742,
+      "E[tax saved]": 836.5222453791146,
+      "sub-portfolio value": 36173.29818538941,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.85,
+      "K": 3370.589761784076,
+      "confidence": 0.8502,
+      "E[L]": 6071.403026212367,
+      "E[tax saved]": 916.833601858719,
+      "sub-portfolio value": 38127.85557802377,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.9,
+      "K": 3370.589761784076,
+      "confidence": 0.9002,
+      "E[L]": 6864.605045204377,
+      "E[tax saved]": 1028.7920629897214,
+      "sub-portfolio value": 41955.759176858155,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.95,
+      "K": 3370.589761784076,
+      "confidence": 0.9516,
+      "E[L]": 9210.332869651154,
+      "E[tax saved]": 1313.3314679013745,
+      "sub-portfolio value": 56730.09922038838,
+      "status": "optimal"
+    },
+    {
+      "alpha": 0.975,
+      "K": 3370.589761784076,
+      "confidence": 0.9744,
+      "E[L]": 15339.118511271945,
+      "E[tax saved]": 1761.8103601851444,
+      "sub-portfolio value": 179410.0,
+      "status": "infeasible: harvesting everything eligible reaches only P(L>=K)=97.4% < 98%; using all"
+    },
+    {
+      "alpha": 0.99,
+      "K": 3370.589761784076,
+      "confidence": 0.9744,
+      "E[L]": 15339.118511271945,
+      "E[tax saved]": 1761.8103601851444,
+      "sub-portfolio value": 179410.0,
+      "status": "infeasible: harvesting everything eligible reaches only P(L>=K)=97.4% < 99%; using all"
+    }
+  ],
+  "robustness": {
+    "seeds_mean": {
+      "mean": 0.456423,
+      "cvar": 0.9578599999999999,
+      "calibrated": 0.9003430000000001,
+      "milp": 0.9008980000000001
+    },
+    "convergence": {
+      "N": [
+        250,
+        500,
+        1000,
+        2000,
+        4000,
+        8000
+      ],
+      "mean": [
+        0.8778140000000001,
+        0.891534,
+        0.900952,
+        0.898352,
+        0.900544,
+        0.899944
+      ],
+      "sd": [
+        0.009466451499902155,
+        0.014262149347135602,
+        0.009310601269520692,
+        0.00682466819706277,
+        0.0036503786105005556,
+        0.004913127720709078
+      ]
+    },
+    "param_median": 0.891675,
+    "param_p05": 0.8332875000000001,
+    "misspec": {
+      "optimised model": {
+        "confidence": 0.90242,
+        "ci": [
+          0.9011117136305986,
+          0.9037128272996191
+        ]
+      },
+      "Student-t, df=4": {
+        "confidence": 0.89821,
+        "ci": [
+          0.8968771384851778,
+          0.8995275641732933
+        ]
+      },
+      "volatility +50%": {
+        "confidence": 0.82369,
+        "ci": [
+          0.8220136142098797,
+          0.8253539511539247
+        ]
+      },
+      "persistent crisis regime": {
+        "confidence": 0.90933,
+        "ci": [
+          0.9080636820005429,
+          0.9105805934802135
+        ]
+      },
+      "strong rally (+20%/yr drift)": {
+        "confidence": 0.78835,
+        "ci": [
+          0.7865542363322402,
+          0.7901346866269274
+        ]
+      },
+      "true data-generating F": {
+        "confidence": 0.89162,
+        "ci": [
+          0.890250067363115,
+          0.8929748884519336
+        ]
+      }
+    }
+  },
+  "robust_plan": {
+    "ambiguity_set": [
+      "vol +30%",
+      "drift +10%/yr",
+      "drift -10%/yr",
+      "Student-t, df=4"
+    ],
+    "sub-portfolio value": 60138.52077160017,
+    "E[L]": 9569.673047086684,
+    "misspec": {
+      "optimised model": {
+        "confidence": 0.95233,
+        "ci": [
+          0.9513874728104296,
+          0.9532551508140558
+        ]
+      },
+      "Student-t, df=4": {
+        "confidence": 0.94612,
+        "ci": [
+          0.945121875742077,
+          0.9471009864411861
+        ]
+      },
+      "volatility +50%": {
+        "confidence": 0.89003,
+        "ci": [
+          0.888651365228202,
+          0.8913936516671135
+        ]
+      },
+      "persistent crisis regime": {
+        "confidence": 0.95308,
+        "ci": [
+          0.9521444681633976,
+          0.9539981266496412
+        ]
+      },
+      "strong rally (+20%/yr drift)": {
+        "confidence": 0.874345,
+        "ci": [
+          0.8728851177852135,
+          0.8757905016534884
+        ]
+      },
+      "true data-generating F": {
+        "confidence": 0.94603,
+        "ci": [
+          0.9450310985292157,
+          0.947011767111421
+        ]
+      }
+    }
+  }
+}
