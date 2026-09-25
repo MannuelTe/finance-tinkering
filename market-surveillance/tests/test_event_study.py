@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
+import pytest
 
-from marketsurv.surveillance.event_study import pre_event_screen
+from marketsurv.surveillance.event_study import pre_event_screen, screen_events
 
 
 def make_stock(n=400, runup=0.0, vol_boost=0.0, seed=0):
@@ -31,3 +32,32 @@ def test_quiet_stock_is_not_flagged():
 def test_short_history_returns_none():
     stock, mkt, ev = make_stock(n=100)
     assert pre_event_screen(stock, mkt, ev) is None
+
+
+def test_rejects_unsorted_observations():
+    stock, mkt, ev = make_stock()
+    with pytest.raises(ValueError, match="sorted"):
+        pre_event_screen(stock.iloc[::-1], mkt, ev)
+
+
+def test_empty_batch_result_has_stable_schema():
+    events = pd.DataFrame({"ticker": ["MISSING"], "event_date": ["2026-01-05"]})
+    result = screen_events(events, {}, pd.Series(dtype=float, index=pd.DatetimeIndex([])))
+    assert list(result.columns) == [
+        "ticker",
+        "event_date",
+        "n_est",
+        "alpha",
+        "beta",
+        "car",
+        "car_t",
+        "volume_z",
+        "flagged",
+    ]
+
+
+def test_missing_event_volume_is_not_scored():
+    stock, market, event_date = make_stock()
+    event_position = stock.index.get_loc(event_date)
+    stock.loc[stock.index[event_position - 1], "volume"] = np.nan
+    assert pre_event_screen(stock, market, event_date) is None

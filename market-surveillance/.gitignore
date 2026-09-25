@@ -6,3 +6,6 @@ data/cache/
 # Personal pull notes/process (institution, past mistakes, formulas) - keep out of the public repo.
 docs/bloomberg-pull.md
 docs/data-pull-checklist.md
+
+# Private project notebook: unfinished experiments, backlog, and restart context.
+/WIP.md

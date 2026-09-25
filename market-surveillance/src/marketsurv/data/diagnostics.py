@@ -10,9 +10,23 @@ N_META = 12
 OFFSETS = np.arange(-420, 6)
 BLOCK = len(OFFSETS)
 POS0 = int(np.flatnonzero(OFFSETS == 0)[0])
+META_COLUMNS = (
+    "Deal Type",
+    "Announce Date",
+    "Target Name",
+    "Acquirer Name",
+    "Seller Name",
+    "Announced Total Value (mil.)",
+    "Payment Type",
+    "TV/EBITDA",
+    "Deal Status",
+    "Target Ticker",
+    "Acquirer Ticker",
+    "Seller Ticker",
+)
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class RowCheck:
     row: int
     target: str
@@ -32,6 +46,9 @@ def split_blocks(raw: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray, np.ndarra
             f"blocks), got {raw.shape[1]}. Did the export get truncated?"
         )
     meta = raw.iloc[:, :N_META]
+    missing = set(META_COLUMNS).difference(meta.columns)
+    if missing:
+        raise ValueError(f"metadata columns missing: {', '.join(sorted(missing))}")
     body = raw.iloc[:, N_META : N_META + 3 * BLOCK].apply(pd.to_numeric, errors="coerce")
     body = body.to_numpy()
     return meta, body[:, :BLOCK], body[:, BLOCK : 2 * BLOCK], body[:, 2 * BLOCK :]
@@ -48,8 +65,11 @@ def _peak_offset(price_row: np.ndarray) -> float:
 
 
 def check_rows(raw: pd.DataFrame, min_obs: int = 400) -> list[RowCheck]:
+    """Inspect every pull row for completeness and likely date misalignment."""
+    if not 1 <= min_obs <= BLOCK:
+        raise ValueError(f"min_obs must be between 1 and {BLOCK}")
     meta, price, volume, bench = split_blocks(raw)
-    out = []
+    out: list[RowCheck] = []
     for i in range(len(raw)):
         issues = []
         p_obs, v_obs, b_obs = (int(np.isfinite(x[i]).sum()) for x in (price, volume, bench))
@@ -58,17 +78,29 @@ def check_rows(raw: pd.DataFrame, min_obs: int = 400) -> list[RowCheck]:
         elif p_obs < min_obs:
             issues.append(f"price has only {p_obs}/{BLOCK} days — fill likely truncated")
         if v_obs < min_obs and p_obs >= min_obs:
-            issues.append(f"volume has only {v_obs}/{BLOCK} days but price is complete — "
-                           "volume block may be pointing at a different ticker/row")
+            issues.append(
+                f"volume has only {v_obs}/{BLOCK} days but price is complete — "
+                "volume block may be pointing at a different ticker/row"
+            )
         if b_obs < min_obs and p_obs >= min_obs:
             issues.append(f"benchmark has only {b_obs}/{BLOCK} days")
         peak = _peak_offset(price[i]) if p_obs >= 4 else float("nan")
         if np.isfinite(peak) and peak < 0:
-            issues.append(f"largest price move is at offset {peak:+.0f}, not 0 — "
-                           "Announce Date and the price column may be misaligned for this row")
-        out.append(RowCheck(
-            row=i, target=str(meta.iloc[i]["Target Name"]), ticker=str(meta.iloc[i]["Target Ticker"]),
-            announce_date=str(meta.iloc[i]["Announce Date"]),
-            price_obs=p_obs, volume_obs=v_obs, bench_obs=b_obs, peak_offset=peak, issues=issues,
-        ))
+            issues.append(
+                f"largest price move is at offset {peak:+.0f}, not 0 — "
+                "Announce Date and the price column may be misaligned for this row"
+            )
+        out.append(
+            RowCheck(
+                row=i,
+                target=str(meta.iloc[i]["Target Name"]),
+                ticker=str(meta.iloc[i]["Target Ticker"]),
+                announce_date=str(meta.iloc[i]["Announce Date"]),
+                price_obs=p_obs,
+                volume_obs=v_obs,
+                bench_obs=b_obs,
+                peak_offset=peak,
+                issues=issues,
+            )
+        )
     return out

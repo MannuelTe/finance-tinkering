@@ -21,14 +21,14 @@ WAIVERS = {"NLIQ", "OILQ", "PRIC", "SIZE", "ILQD"}
 NON_LEI_CODES = {"INTC"}
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Issue:
     field_no: int
     field: str
     message: str
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TransactionReport:
     report_status: str  # 1
     transaction_ref: str  # 2
@@ -50,7 +50,7 @@ class TransactionReport:
     waiver_indicator: str | None = None  # 61
     securities_financing: bool = False  # 65
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return asdict(self)
 
 
@@ -71,6 +71,8 @@ def validate(r: TransactionReport) -> list[Issue]:
         bad(1, "report_status", f"must be one of {sorted(REPORT_STATUS)}")
     if not (1 <= len(r.transaction_ref) <= 52) or not r.transaction_ref.isalnum():
         bad(2, "transaction_ref", "1-52 alphanumeric characters")
+    if not isinstance(r.investment_firm_covered, bool):
+        bad(5, "investment_firm_covered", "must be a boolean")
     for no, name, val in [
         (4, "executing_entity", r.executing_entity),
         (6, "submitting_entity", r.submitting_entity),
@@ -104,4 +106,6 @@ def validate(r: TransactionReport) -> list[Issue]:
         bad(62, "short_selling_indicator", f"must be one of {sorted(SHORT_SELLING)}")
     if r.waiver_indicator is not None and r.waiver_indicator not in WAIVERS:
         bad(61, "waiver_indicator", f"must be one of {sorted(WAIVERS)}")
+    if not isinstance(r.securities_financing, bool):
+        bad(65, "securities_financing", "must be a boolean")
     return out

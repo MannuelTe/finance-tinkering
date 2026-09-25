@@ -4,9 +4,20 @@ import pytest
 
 from marketsurv.data.datapull import BLOCK, N_META, OFFSETS, load_datapull
 
-META = ["Deal Type", "Announce Date", "Target Name", "Acquirer Name", "Seller Name",
-        "Announced Total Value (mil.)", "Payment Type", "TV/EBITDA", "Deal Status",
-        "Target Ticker", "Acquirer Ticker", "Seller Ticker"]
+META = [
+    "Deal Type",
+    "Announce Date",
+    "Target Name",
+    "Acquirer Name",
+    "Seller Name",
+    "Announced Total Value (mil.)",
+    "Payment Type",
+    "TV/EBITDA",
+    "Deal Status",
+    "Target Ticker",
+    "Acquirer Ticker",
+    "Seller Ticker",
+]
 
 
 def make_csv(path, rows):
@@ -17,14 +28,17 @@ def make_csv(path, rows):
 def row(deal_type="M&A", date="3/21/2026", ticker="AAA IM", blocks=True):
     meta = [deal_type, date, "Target", "Acq", None, 100.0, "Cash", None, "Pending", ticker, "B", ""]
     n = np.arange(BLOCK)
-    body = np.concatenate([10 + n * 0.01, 1000 + n, 500 + n * 0.1]) if blocks else [np.nan] * 3 * BLOCK
+    body = (
+        np.concatenate([10 + n * 0.01, 1000 + n, 500 + n * 0.1]) if blocks else [np.nan] * 3 * BLOCK
+    )
     return meta + list(body)
 
 
 def test_keeps_complete_takeovers_only(tmp_path):
     p = tmp_path / "d.csv"
-    make_csv(p, [row(), row(deal_type="INV", ticker="BBB IM"), row(ticker="CCC IM", blocks=False),
-                 row()])  # last row duplicates the first (same ticker and date)
+    make_csv(
+        p, [row(), row(deal_type="INV", ticker="BBB IM"), row(ticker="CCC IM", blocks=False), row()]
+    )  # last row duplicates the first (same ticker and date)
     deals, series = load_datapull(p)
     assert list(deals.ticker) == ["AAA IM"]
     s = series[0]
@@ -42,6 +56,16 @@ def test_weekend_announce_rolls_to_monday_and_day0_is_offset_zero(tmp_path):
 
 def test_rejects_wrong_layout(tmp_path):
     p = tmp_path / "d.csv"
-    pd.DataFrame(np.zeros((1, N_META + 5)), columns=[f"c{i}" for i in range(N_META + 5)]).to_csv(p, index=False)
+    pd.DataFrame(np.zeros((1, N_META + 5)), columns=[f"c{i}" for i in range(N_META + 5)]).to_csv(
+        p, index=False
+    )
     with pytest.raises(ValueError):
+        load_datapull(p)
+
+
+def test_rejects_unrecognized_metadata_columns(tmp_path):
+    p = tmp_path / "d.csv"
+    columns = [f"meta{i}" for i in range(N_META)] + [f"c{i}" for i in range(3 * BLOCK)]
+    pd.DataFrame([row()], columns=columns).to_csv(p, index=False)
+    with pytest.raises(ValueError, match="metadata columns missing"):
         load_datapull(p)

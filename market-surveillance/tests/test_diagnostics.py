@@ -1,11 +1,23 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from marketsurv.data.diagnostics import BLOCK, check_rows
 
-META = ["Deal Type", "Announce Date", "Target Name", "Acquirer Name", "Seller Name",
-        "Announced Total Value (mil.)", "Payment Type", "TV/EBITDA", "Deal Status",
-        "Target Ticker", "Acquirer Ticker", "Seller Ticker"]
+META = [
+    "Deal Type",
+    "Announce Date",
+    "Target Name",
+    "Acquirer Name",
+    "Seller Name",
+    "Announced Total Value (mil.)",
+    "Payment Type",
+    "TV/EBITDA",
+    "Deal Status",
+    "Target Ticker",
+    "Acquirer Ticker",
+    "Seller Ticker",
+]
 
 
 def make_row(price=None, volume=None, bench=None):
@@ -13,8 +25,20 @@ def make_row(price=None, volume=None, bench=None):
     price = np.full(BLOCK, np.nan) if price is None else price
     volume = 1000 + n if volume is None else volume
     bench = 500 + n * 0.1 if bench is None else bench
-    meta = ["M&A", "3/23/2026", "Target", "Acq", None, 100.0, "Cash", None, "Pending",
-            "AAA IM", "B", ""]
+    meta = [
+        "M&A",
+        "3/23/2026",
+        "Target",
+        "Acq",
+        None,
+        100.0,
+        "Cash",
+        None,
+        "Pending",
+        "AAA IM",
+        "B",
+        "",
+    ]
     return meta + list(price) + list(volume) + list(bench)
 
 
@@ -48,3 +72,10 @@ def test_clean_row_has_no_issues():
     price[pos0:] += 2.0
     checks = check_rows(df([make_row(price=price)]))
     assert checks[0].issues == []
+
+
+def test_rejects_unrecognized_metadata_columns():
+    raw = df([make_row()])
+    raw.columns = [f"column{i}" for i in range(raw.shape[1])]
+    with pytest.raises(ValueError, match="metadata columns missing"):
+        check_rows(raw)

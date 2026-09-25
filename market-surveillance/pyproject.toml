@@ -2,6 +2,7 @@
 name = "market-surveillance"
 version = "0.1.0"
 description = "Market-abuse screens (pre-announcement event study) and a MiFIR RTS 22 transaction-report validator"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "numpy>=2.0",
@@ -9,8 +10,11 @@ dependencies = [
     "pyarrow>=17",
 ]
 
+[project.scripts]
+marketsurv = "marketsurv.cli:main"
+
 [project.optional-dependencies]
-bloomberg = ["xbbg>=0.7"]  # needs a logged-in Terminal and blpapi; see docs/bloomberg-pull.md
+bloomberg = ["xbbg>=0.7"]  # requires a logged-in Terminal and blpapi
 plots = ["matplotlib>=3.11.2"]  # scripts/plot_pull_diagnostics.py
 
 [dependency-groups]

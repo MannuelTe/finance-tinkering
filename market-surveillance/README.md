@@ -1,57 +1,109 @@
-# market-surveillance
+# Market Surveillance
 
-Two pieces of what a market-surveillance and transaction-reporting team does, on real reference
-data where possible.
+Market-surveillance analytics and transaction-reporting controls for equities. The package
+combines a pre-announcement event study, Bloomberg-export quality checks, identifier validation,
+and reconciliation of internal trades against ARM acknowledgements.
 
-| Module | What it does | Status |
-|---|---|---|
-| `marketsurv.surveillance.event_study` | Pre-announcement screen for possible insider dealing: market-model abnormal return and abnormal volume before takeover announcements | Working on synthetic data; waiting on Bloomberg pull |
-| `marketsurv.reporting.rts22` | Equity subset of the MiFIR RTS 22 transaction report with per-field validation (LEI mod-97, ISIN Luhn, MIC, UTC timestamps) | Working; XML serialisation and XSD validation not done |
-| `marketsurv.reporting.reconcile` | Reconciles internal trade records against ARM acknowledgements (missing, unexpected, rejected, quantity/price mismatches) | Working |
-| `marketsurv.data.bloomberg` | Bloomberg Desktop API pull layer (via `xbbg`) writing to `data/raw/` | Untested: needs a Terminal |
+The project is designed as an auditable reference implementation: calculations are deterministic,
+inputs are validated at system boundaries, and licensed row-level data stays outside version
+control.
 
-## Run
+## Capabilities
+
+| Area | Capability |
+|---|---|
+| Surveillance | Market-model abnormal returns and abnormal volume before takeover announcements |
+| Controls | Within-stock placebo observations for contextualizing the screen's flag rate |
+| Data quality | Completeness and event-date alignment checks for wide Bloomberg exports |
+| Reporting | Validation for an equity-focused subset of MiFIR RTS 22 fields |
+| Reconciliation | Missing, unexpected, rejected, quantity, and price breaks against ARM acknowledgements |
+| Reference data | LEI mod-97, ISIN Luhn, MIC, country, and currency format validation |
+
+## Installation
+
+Python 3.12 or later and [uv](https://docs.astral.sh/uv/) are recommended.
 
 ```bash
 uv sync
 uv run pytest
 ```
 
-Bloomberg pulls need the extra and a logged-in Terminal: `uv sync --extra bloomberg`. What to
-pull is in `docs/bloomberg-pull.md` (kept locally, not tracked: see below).
-
-## Pull 1, diagnosed
-
-The first Bloomberg export came back almost empty: 95.9% of 5,000 rows returned zero price
-observations, uniformly across deal types (93-100%) rather than concentrated in delisted
-tickers, which points at a formula/entity-reference bug rather than data availability. Pull 3
-fixed it and is what `scripts/run_event_study.py` runs against.
-
-![Completeness diagnostic: 95.9% of pull 1's 5,000 rows returned zero price observations; only 192 (3.8%) were usable](figures/pull1-diagnostic.png)
-
-Regenerate from a raw pull (aggregate output only - safe to commit even though the input isn't):
+Bloomberg Desktop API access is optional and requires a logged-in Terminal:
 
 ```bash
-uv run --extra plots python scripts/plot_pull_diagnostics.py data/raw/datapull_1.csv figures/pull1-diagnostic.png
+uv sync --extra bloomberg
 ```
 
-## Limits, stated up front
+## Command line
 
-- An abnormal pre-announcement run-up is a reason to look, not evidence of abuse. Leaks, rumours
-  and sector news look the same. Results will be reported as flag rates against a matched control
-  sample, not as detected insiders.
-- Bloomberg has no order-level data, so spoofing and layering are out of scope.
-- The RTS 22 module is a learning implementation of a subset of the 65 fields. Check it against
-  the current ESMA reporting instructions and schema before treating it as authoritative.
-- Vendor data is licensed: `data/raw/` is git-ignored, and only scripts and aggregate results
-  belong in the repo. `docs/bloomberg-pull.md` and `docs/data-pull-checklist.md` (personal
-  pull-process notes) are git-ignored too; the pull layer and its script (`scripts/pull_bloomberg.py`,
-  `src/marketsurv/data/bloomberg.py`) are not.
+Validate a Bloomberg export before running any analysis:
 
-## Next
+```bash
+uv run marketsurv validate-pull data/raw/pilot.csv
+```
 
-1. Run the Bloomberg pull; run the screen on real events and a control sample; report flag rates.
-2. Build a small label set from public enforcement cases and check recall.
-3. RTS 22: ISO 20022 XML output, XSD validation against the ESMA schema, and a report generator
-   that samples real ticks as a hypothetical firm's executions.
-4. Optional: marking-the-close screen on intraday bars; HMM regime baseline for the volume series.
+Run the real-event screen and three within-stock placebo observations per eligible deal:
+
+```bash
+uv run marketsurv analyze data/raw/datapull.csv
+```
+
+The analysis writes row-level results to `data/cache/event-study-results.csv`. Both `data/raw/`
+and `data/cache/` are ignored because they contain licensed or vendor-derived observations.
+Use `--help` on the root command or either subcommand for all options.
+
+## Python API
+
+```python
+from marketsurv.data.datapull import load_datapull
+from marketsurv.surveillance.event_study import pre_event_screen
+
+deals, series = load_datapull("data/raw/datapull.csv")
+deal = deals.iloc[0]
+stock = series[int(deal.deal_id)]
+
+result = pre_event_screen(stock, stock["mkt"], deal.day0_date)
+if result is not None:
+    print(result.to_dict())
+```
+
+For transaction reporting, construct a `TransactionReport` and pass it to
+`marketsurv.reporting.rts22.validate`. Reconciliation is available from
+`marketsurv.reporting.reconcile.reconcile`.
+
+## Methodology
+
+For each announcement, the surveillance screen fits a market model over trading days -250 through
+-30 and evaluates cumulative abnormal return and log-volume over days -10 through -1. By default,
+an observation is flagged when its CAR t-statistic is at least 3.0 and its abnormal-volume z-score
+is at least 2.0. The batch workflow repeats the same calculation at earlier placebo dates on the
+same security.
+
+A flag is a triage signal, not a finding of market abuse. Rumours, leaks, sector news, corporate
+events, stale identifiers, and imperfect announcement timestamps can produce similar patterns.
+Results require human review and should be interpreted alongside the placebo rate and source-data
+diagnostics.
+
+## Repository layout
+
+```text
+src/marketsurv/          reusable package and CLI
+tests/                   deterministic unit tests
+scripts/                 Bloomberg and compatibility entry points
+figures/                 aggregate, redistributable diagnostics
+data/raw/                licensed inputs (ignored)
+data/cache/              row-level analysis outputs (ignored)
+```
+
+## Scope and data handling
+
+- The event study operates on daily prices and volume; it does not infer intent or identify
+  participants.
+- Order-level behaviours such as spoofing and layering are outside the available data model.
+- The RTS 22 validator intentionally covers an equity-focused subset. It is a control aid, not a
+  substitute for the current ESMA reporting instructions or ISO 20022 schema validation.
+- Bloomberg data must remain under `data/raw/` or `data/cache/`. Only code and aggregate,
+  non-identifying diagnostics should be committed.
+
+The repository's private `WIP.md` is ignored by Git and holds experiments, unfinished ideas, and
+the resume point for future development.
