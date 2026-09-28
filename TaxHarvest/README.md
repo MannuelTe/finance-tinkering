@@ -1,5 +1,92 @@
 # TaxHarvest
 
+**A tax-loss harvesting engine, built in a country where tax-loss harvesting doesn't exist.**
+
+## Why this exists: there is nothing to harvest in Switzerland
+
+In the US and Canada, selling a position at a loss is worth real money: the realised loss
+offsets capital gains, and a whole industry of robo-advisers automates it. The catch is the
+**wash-sale** rule (US) and the **superficial-loss** rule (Canada). Buy the same thing back
+within 30 days and the loss is disallowed, so the art is in selling the right lots and
+swapping them for something close but not "substantially identical".
+
+In Switzerland none of this applies to a private investor:
+
+* **Private capital gains are tax-free** (Art. 16 Abs. 3 DBG federally, Art. 7 Abs. 4
+  lit. b StHG for the cantons). By the same logic, **capital losses are not deductible**.
+  A harvested loss offsets nothing and saves nothing.
+* What the Swiss tax system does tax (dividends and interest as income, with 35%
+  withholding tax that residents reclaim, plus the cantonal wealth tax on the portfolio's
+  value) doesn't depend on whether you sell. Selling and buying back doesn't change any of it.
+* The exception is the **professional securities dealer** (*gewerbsmässiger
+  Wertschriftenhändler*, ESTV Kreisschreiben Nr. 36). If trading volume, holding periods,
+  leverage or the share of income from trading push you into that category, gains become
+  taxable income and losses become deductible. That is a status most people work hard to
+  avoid, not a strategy.
+
+So this project started as a thought experiment from the Swiss side: what does the
+machinery a US or Canadian investor relies on every December actually look like, and how
+hard is it to do properly? The engine handles all three regimes. Switzerland is included as
+the control case, where the correct answer is always "sell nothing".
+
+## The sample portfolio: one book, two tax systems
+
+[`data/sample_portfolio.csv`](data/sample_portfolio.csv) is a made-up \$468k book as of
+2026-09-28: 19 lots in a taxable account, an S&P 500 fund in a 401(k) and VTI in a Roth IRA.
+It has \$23.6k of unrealised losses and \$18k of gains already realised this year.
+Contributions to the 401(k) go into IVV every two weeks
+([`sample_portfolio_planned.csv`](data/sample_portfolio_planned.csv)), and PFE has DRIP
+switched on. The same book runs through the engine as a US taxpayer and as a Swiss resident
+(`uv run python scripts/run_sample.py`):
+
+| | US, target $K = \tau\,\mathbb{E}[G]$ | US, target $K = \mathbb{E}[G]$ | Switzerland |
+|---|---|---|---|
+| tax rate $\tau$ | 23.8% | 23.8% | 0% |
+| target $K$ | \$5,165 | \$21,702 | \$0 |
+| $\mathbb{P}(L \ge K)$ required / achieved | 90% / 90.0% | 90% / **32.8%** (infeasible) | – |
+| expected harvested loss $\mathbb{E}[L]$ | \$8,574 | \$18,635 (sells every eligible lot) | \$0 |
+| expected tax saved this year | \$1,463 | \$2,458 | \$0 |
+| size of $S$ | \$25,534 (5.5% of $P$) | \$274,075 (58.6%) | \$0 |
+
+**The US plan** is three conditional orders for 2026-11-25. Each one sells only if the
+lot is still below its basis on that day:
+
+| Sell | Buy instead | Correlation | $\mathbb{E}[\text{loss}]$ | $\mathbb{P}(\text{in loss})$ |
+|---|---|---|---|---|
+| 400 INTC | XLK | 0.52 | \$3,548 | 98% |
+| 180 NKE | XLY | 0.58 | \$4,283 | 99% |
+| 38 of 120 DIS | XLC | 0.68 | \$743 | 93% |
+
+None of the originals may be bought back, in *any* account, before 2026-12-26. The screen
+also blocked \$4,440 of losses:
+
+* VOO, because the 401(k)'s IVV purchases on 30 Oct, 13 Nov and 27 Nov track the same index.
+  Rev. Rul. 2008-5 makes a retirement-account purchase count.
+* PFE, because DRIP is on.
+
+Switching the DRIP off, and pointing the 401(k) contributions at a different index for the
+two months around the sale, would unlock both.
+
+**Cancelling the whole tax** ($K = \mathbb{E}[G]$) is out of reach. Even selling every
+eligible losing lot clears \$21.7k only 32.8% of the time. The engine says so, rather than
+returning a plan that looks fine and isn't.
+
+**Robustness** (details in [`figures/sample/`](figures/sample)): re-optimised on 10 fresh
+scenario sets, the plan reaches 90.0% out of sample (sd 0.3 points). It holds under fat
+tails (90.2%) and a persistent crisis regime (91.4%). It drops to 81.1% if volatility is 50%
+higher than assumed, and to 83.2% in a strong rally. A distributionally robust version
+lifts those to 87.9% and 89.2%, at the cost of a larger $S$ (\$41.5k instead of \$25.5k).
+
+**For the Swiss resident** the engine returns an empty plan, with the reason: *"nothing to
+harvest: gains are untaxed under Switzerland rules, so a loss saves nothing"*. Selling INTC,
+NKE and DIS would only create transaction costs and tracking error.
+
+![Sample portfolio under US rules: which lots form S, and the loss distribution](figures/sample/plan.png)
+
+![Plan built on the base model, tested under other distributions](figures/sample/robust_vs_nominal.png)
+
+## What the engine does
+
 Given a portfolio $P$ with a return distribution $F_P$, pick the smallest sub-portfolio
 $S$ of tax lots to sell at a loss, such that:
 
@@ -10,12 +97,11 @@ $S$ of tax lots to sell at a loss, such that:
   "substantially identical", and the original can be bought back after 31 days.
 
 **Status: finished pet project.** The engine, rule screen, learned return model, Monte Carlo
-robustness suite, CLI and four worked examples all work, and 12 tests pass. Results are in
-[`docs/RESULTS.md`](docs/RESULTS.md) and lessons learned in [`docs/LEARNINGS.md`](docs/LEARNINGS.md).
+robustness suite, CLI, the sample portfolio and four worked examples all work, and 13 tests
+pass. Results are in [`docs/RESULTS.md`](docs/RESULTS.md) and lessons learned in
+[`docs/LEARNINGS.md`](docs/LEARNINGS.md).
 
-![US example: which lots form S, and the loss distribution with P(L ≥ K) = 90%](figures/us_core/plan.png)
-
-## The problem
+### The problem
 
 Draw $N$ scenarios of prices at the harvest date from $F_P$. For lot $i$ with $q_i$ shares
 and cost basis $b_i$, the loss if sold in scenario $s$ (price $p_{i,s}$) is
@@ -87,11 +173,14 @@ identical, so the grouping is a conservative judgement call, and you can edit it
 uv sync
 uv run --group dev pytest
 
+uv run python scripts/run_sample.py             # the sample portfolio, US vs CH (~10 min)
 uv run python scripts/th.py examples            # all 4 examples -> figures/ (~45 min, full Monte Carlo)
 uv run python scripts/th.py examples --only canada --quick
 
 uv run python scripts/th.py run data/us_portfolio.csv --planned data/us_portfolio_planned.csv \
     --as-of 2026-09-24 --jurisdiction US --realized-gains 15000 --confidence 0.9 --horizon-days 40
+uv run python scripts/th.py run data/sample_portfolio.csv --jurisdiction CH --as-of 2026-09-28 \
+    --no-robust --no-anim                       # Swiss rules: empty plan
 
 uv run python scripts/th.py interactive         # type your lots in
 ```
@@ -118,7 +207,7 @@ interactive mode the tool asks for them. Each run writes `plan.png`, `tax_impact
 src/taxharvest/
   portfolio.py   lots, accounts, CSV / free-text parsing
   model.py       factor model, Student-t, bootstrap, GMM (EM) + Gaussian HMM (Baum-Welch)
-  washsale.py    US / Canada screen, replacement picker
+  washsale.py    US / Canada / Switzerland rules, screen, replacement picker
   engine.py      scenario generation, LP / MILP solvers, calibration, plan object
   robustness.py  seed study, SAA convergence, parameter uncertainty, misspecification,
                  ambiguity set
@@ -126,8 +215,9 @@ src/taxharvest/
   report.py      one problem -> folder of figures + trades + summary
   scenarios.py   the four worked examples
   cli.py         examples | run | interactive
-data/            example portfolios as CSV
-figures/         output of `examples`
+data/            sample and example portfolios as CSV
+scripts/         th.py (CLI launcher), run_sample.py
+figures/         output of `examples` and `run_sample.py`
 docs/            RESULTS.md, LEARNINGS.md
 ```
 

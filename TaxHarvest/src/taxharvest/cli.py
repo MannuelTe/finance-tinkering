@@ -131,7 +131,7 @@ def cmd_run(args):
 
 def cmd_interactive(args):
     print("Tax-loss harvest planner. Wash-sale (US) / superficial-loss (CA) aware.\n")
-    args.jurisdiction = _ask("Jurisdiction US or CA", "US", str.upper)
+    args.jurisdiction = _ask("Jurisdiction US, CA or CH", "US", str.upper)
     rules = JURISDICTIONS[args.jurisdiction]
     print(f"  {rules.note}")
     args.tax_rate = _ask("Effective tax rate on capital gains", round(rules.default_tax_rate, 4),
@@ -195,7 +195,7 @@ def main(argv=None):
                                      " (+ optional factor,beta,idio_vol,wash_group,sector)")
     r.add_argument("--planned", help="CSV of planned buys: ticker,on,account")
     r.add_argument("--as-of")
-    r.add_argument("--jurisdiction", default="US", choices=["US", "CA", "us", "ca"])
+    r.add_argument("--jurisdiction", default="US", choices=["US", "CA", "CH", "us", "ca", "ch"])
     r.add_argument("--tax-rate", type=float)
     r.add_argument("--confidence", type=float, default=0.9)
     r.add_argument("--horizon-days", type=int, default=40)

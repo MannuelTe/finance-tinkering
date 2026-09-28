@@ -47,6 +47,10 @@ class Jurisdiction:
     default_tax_rate: float = 0.238
     note: str = ""
 
+    @property
+    def symbol(self) -> str:
+        return {"USD": "$", "CAD": "C$", "CHF": "CHF "}.get(self.currency, self.currency + " ")
+
 
 US = Jurisdiction(
     "US", "United States", "wash sale (IRC s.1091)", currency="USD", default_tax_rate=0.238,
@@ -57,7 +61,14 @@ CA = Jurisdiction(
     default_tax_rate=0.5 * 0.5353,
     note="26.8% = 50% inclusion x 53.53% top Ontario marginal rate.",
 )
-JURISDICTIONS = {"US": US, "CA": CA}
+CH = Jurisdiction(
+    "CH", "Switzerland", "none: private capital gains are tax-free (DBG Art. 16 Abs. 3)",
+    window_before=0, window_after=0, currency="CHF", default_tax_rate=0.0,
+    note="Private capital gains are tax-free and losses are not deductible, so a harvest is "
+         "worth nothing. Professional securities dealers (ESTV Kreisschreiben 36) are the "
+         "exception; model them with an explicit --tax-rate.",
+)
+JURISDICTIONS = {"US": US, "CA": CA, "CH": CH}
 
 
 @dataclass
@@ -80,6 +91,9 @@ def screen(portfolio: Portfolio, universe: Universe, harvest_on: date,
         if not lot.taxable:
             st.eligible = False
             st.reasons.append(f"sheltered account ({lot.account}): loss not deductible")
+        if rules.window_before == rules.window_after == 0:  # no repurchase rule (CH)
+            out.append(st)
+            continue
         for j, other in enumerate(lots):
             if j == i or universe.group(other.ticker) != g:
                 continue

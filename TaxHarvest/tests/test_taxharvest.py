@@ -7,7 +7,7 @@ import pytest
 from taxharvest.engine import HarvestProblem, coverage, evaluate, optimise, solve_x
 from taxharvest.model import Universe, fit_gmm, fit_regime_model
 from taxharvest.portfolio import Portfolio
-from taxharvest.washsale import CA, US, pick_replacements, screen
+from taxharvest.washsale import CA, CH, US, pick_replacements, screen
 
 AS_OF = date(2026, 9, 24)
 
@@ -130,6 +130,20 @@ def test_end_to_end_plan_respects_screen_and_holds_out_of_sample():
     assert oos > 0.85
     for t, r in plan.replacements.items():
         assert pr.universe.group(r.buy) != pr.universe.group(t)
+
+
+def test_switzerland_harvests_nothing():
+    pr = _problem("""
+        VTI 120 318 2025-11-20 292 taxable
+        PFE 500 30 2025-01-10 25 taxable yes
+        VOO 10 500 2024-01-01 575 saeule3a
+    """, rules=CH, realized_gains=15_000)
+    plan = optimise(pr)
+    assert pr.tax_rate == 0
+    assert plan.target == 0 and not plan.x.any()
+    assert "untaxed" in plan.info["status"]
+    assert plan.status[1].eligible  # no repurchase rule, so DRIP is irrelevant
+    assert not plan.status[2].eligible  # pillar 3a is sheltered
 
 
 # ----------------------------------------------------------------------------- learning

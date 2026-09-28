@@ -407,6 +407,9 @@ def optimise(problem: HarvestProblem, method: str = "calibrated") -> HarvestPlan
     if problem.ambiguity:
         info["worst-case P(L>=K) over ambiguity set"] = coverage(Lms, x, K)
     x = np.where(x > 1e-7, np.minimum(x, 1.0), 0.0)
+    if problem.tax_rate == 0 and problem.target_override is None:
+        info["status"] = (f"nothing to harvest: gains are untaxed under {problem.rules.name} "
+                          f"rules, so a loss saves nothing")
 
     harvested_groups = {uni.group(lot.ticker) for xi, lot in zip(x, p.lots) if xi > 0}
     sold = sorted({lot.ticker for xi, lot in zip(x, p.lots) if xi > 0})

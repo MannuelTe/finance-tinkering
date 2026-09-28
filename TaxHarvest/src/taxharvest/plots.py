@@ -47,7 +47,7 @@ def money(cur=""):
 
 
 def _cur(plan):
-    return "$" if plan.problem.rules.currency == "USD" else "C$"
+    return plan.problem.rules.symbol
 
 
 def _short(reason: str) -> str:
@@ -88,7 +88,7 @@ def plan_overview(plan: HarvestPlan, path: Path, title: str = ""):
             a.barh(yi, rv, color="none", edgecolor=MUTED, hatch="////", height=0.62, lw=0.6)
             a.text(rv + full.max() * 0.02, yi, _short(r.why_not), va="center", fontsize=7,
                    color=CRITICAL)
-    a.set_yticks(y, [f"{r.ticker}  {r.account}" for _, r in df.iterrows()], fontsize=8)
+    a.set_yticks(y, _lot_labels(plan), fontsize=8)
     a.xaxis.set_major_formatter(money(cur))
     a.set_xlabel("expected loss at harvest date if the whole lot is sold")
     a.grid(axis="y", visible=False)
@@ -122,6 +122,14 @@ def plan_overview(plan: HarvestPlan, path: Path, title: str = ""):
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
+
+
+def _lot_labels(plan) -> list[str]:
+    """'TICKER  account', plus the purchase month where a ticker/account pair repeats."""
+    lots = plan.problem.portfolio.lots
+    keys = [(lot.ticker, lot.account) for lot in lots]
+    return [f"{lot.ticker}  {lot.account}" + (f"  {lot.acquired:%Y-%m}" if keys.count(k) > 1 else "")
+            for lot, k in zip(lots, keys)]
 
 
 def _raw_expected(plan, i):
@@ -420,7 +428,7 @@ def animate_frontier(plans: list[HarvestPlan], path: Path):
     """How S changes as the required confidence rises."""
     style()
     cur = _cur(plans[0])
-    tick = [f"{lot.ticker} {lot.account}" for lot in plans[0].problem.portfolio.lots]
+    tick = _lot_labels(plans[0])
     elig = np.array([s.eligible for s in plans[0].status])
     fig, (a, b) = plt.subplots(1, 2, figsize=(12, 0.26 * len(tick) + 2.5),
                                gridspec_kw={"width_ratios": [1, 1.2]})

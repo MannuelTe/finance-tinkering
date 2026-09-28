@@ -33,21 +33,32 @@ What this project taught me, in rough order of how much it changed the design.
    (`--target tax|offset`), and the choice changes feasibility more than any modelling
    decision does.
 
+6. **A null case keeps the engine honest.** Switzerland taxes neither private capital gains
+   nor losses, so the right answer there is always "sell nothing". Running the sample book
+   under Swiss rules is a cheap end-to-end test that the target, the screen and the report
+   all degrade to zero cleanly. It also caught a bug: DRIP was still flagged as blocking in
+   a jurisdiction that has no repurchase rule.
+
+7. **Cancelling the whole tax is usually out of reach.** On the sample book, \$18k of gains
+   already realised plus the expected return needs \$21.7k of losses. Selling every eligible
+   losing lot gets there only 32.8% of the time. Reporting "infeasible, here is the best
+   you can do" beats quietly returning a plan that misses.
+
 ## About the optimisation
 
-6. **CVaR is the wrong tool when you need a specific confidence.** The CVaR LP is the standard
+8. **CVaR is the wrong tool when you need a specific confidence.** The CVaR LP is the standard
    convex stand-in for a chance constraint. Here it over-covered (94–96% for a 90% target),
    sold almost twice as much in the Canada case, and in two examples was *infeasible* where
    the chance constraint was satisfiable. The fix that worked: search over the CVaR level $\alpha'$
    for the smallest one whose LP solution still meets the real chance constraint
    in-sample. That lands exactly on $\alpha$ and stays convex.
 
-7. **Exact in-sample chance constraints do generalise here.** With ~15 decision variables and
+9. **Exact in-sample chance constraints do generalise here.** With ~15 decision variables and
    thousands of scenarios, the sample-average approximation barely overfits. Out-of-sample
    confidence was within about 1 point of target from $N = 1000$, and the MILP
    (exact on its subsample) did no better than the calibrated LP.
 
-8. **Estimation error, not Monte Carlo error, is the real uncertainty.** Monte Carlo noise at
+10. **Estimation error, not Monte Carlo error, is the real uncertainty.** Monte Carlo noise at
    $N = 8000$ is $\pm 0.5$ points. Five years of data leaves enough drift uncertainty to push a
    40-day plan down to 83–84% in a bad draw. If you want a guarantee, make the plan robust
    to the *model*. More scenarios won't help. The ambiguity-set version recovered 5–9 points
@@ -55,26 +66,26 @@ What this project taught me, in rough order of how much it changed the design.
 
 ## About the learned model
 
-9. **Counting regime transitions from mixture labels badly underestimates persistence.**
+11. **Counting regime transitions from mixture labels badly underestimates persistence.**
    My first version fitted a GMM and counted transitions between hard labels. It estimated
    $\mathbb{P}(\text{stay in crisis}) = 0.58$ when the truth was $0.90$: calm-looking crisis days get mislabelled
    and break the runs. Baum–Welch initialised from the GMM recovered 0.939 vs 0.93. Over a
    multi-week horizon persistence is what matters, so the shortcut was not acceptable.
 
-10. **BIC was enough.** On 2,500 days it picked the true $k = 2$ without any tuning.
+12. **BIC was enough.** On 2,500 days it picked the true $k = 2$ without any tuning.
 
 ## About the engineering
 
-11. **HiGHS: IPM, not simplex, for scenario LPs, and always set a time limit.** Dual simplex
+13. **HiGHS: IPM, not simplex, for scenario LPs, and always set a time limit.** Dual simplex
     took 28 s on a 20k-scenario CVaR LP that IPM solved in 3 s. IPM can stall indefinitely
     near the feasibility boundary, though, and one solve hung the robustness run for 10+
     minutes. The fix was a time limit with a dual-simplex retry.
 
-12. **Bisection is wasteful when the function is smooth.** Coverage is smooth and monotone in
+14. **Bisection is wasteful when the function is smooth.** Coverage is smooth and monotone in
     the CVaR level, so regula falsi (Illinois variant) needs 3–5 LP solves where bisection
     needed 9–15. That cut the robust plan from over 10 minutes to about 40 s.
 
-13. **macOS + synced folders + Python 3.13 break editable installs.** Something sets the
+15. **macOS + synced folders + Python 3.13 break editable installs.** Something sets the
     `hidden` flag on the venv's `.pth` files, and Python 3.13 skips hidden `.pth` files.
     `scripts/th.py` inserts `src/` itself.
 

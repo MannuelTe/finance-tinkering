@@ -13,7 +13,7 @@ from .engine import HarvestPlan, HarvestProblem, optimise
 
 def describe(plan: HarvestPlan) -> str:
     s = plan.summary()
-    cur = "$" if plan.problem.rules.currency == "USD" else "C$"
+    cur = plan.problem.rules.symbol
     lo, med, hi = s["L 5/50/95%"]
     target_how = {"tax": "tax rate x E[G]", "offset": "E[G], full offset"}.get(
         s["target_mode"], "fixed amount")
@@ -43,7 +43,7 @@ def describe(plan: HarvestPlan) -> str:
 
 def trade_list(plan: HarvestPlan) -> str:
     df = plan.trades()
-    cur = "$" if plan.problem.rules.currency == "USD" else "C$"
+    cur = plan.problem.rules.symbol
     out = []
     sel = df[df.sell_frac > 0]
     if len(sel):
@@ -71,7 +71,7 @@ def run(problem: HarvestProblem, out: Path, title: str = "", method="calibrated"
     log(describe(plan))
     log(trade_list(plan))
     plan.trades().to_csv(out / "trades.csv", index=False)
-    cur = "$" if problem.rules.currency == "USD" else "C$"
+    cur = problem.rules.symbol
 
     plots.plan_overview(plan, out / "plan.png", title)
     plots.tax_impact(plan, out / "tax_impact.png")

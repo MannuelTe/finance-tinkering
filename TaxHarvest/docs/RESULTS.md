@@ -12,6 +12,25 @@ Its weak point is model risk. If volatility is 50% higher than assumed, or marke
 hard, confidence falls to 79–86%. A distributionally robust version recovers 5–9 points of
 that, at the cost of a 15–90% larger sub-portfolio.
 
+## 0. The sample portfolio (US vs Switzerland)
+
+The headline run, `uv run python scripts/run_sample.py`, is described in the
+[README](../README.md#the-sample-portfolio-one-book-two-tax-systems). Output is in
+[`figures/sample/`](../figures/sample).
+
+| Evaluated under | nominal plan | robust plan |
+|---|---|---|
+| model it was optimised on | 89.8 | 94.4 |
+| Student-t, $\nu = 4$ | 90.2 | 94.6 |
+| persistent crisis regime | 91.4 | 95.4 |
+| volatility +50% | **81.1** | 87.9 |
+| strong rally (+20%/yr drift) | **83.2** | 89.2 |
+| size of $S$ | \$25,534 | \$41,461 |
+
+Out of sample over 10 re-optimisations: `mean` 52.4%, `cvar` 95.8%, `calibrated` 90.0%,
+`milp` 90.1%. Parameter uncertainty (5 years of data): median 89.5%, 5th percentile 84.3%.
+Under Swiss rules the target is $K = 0$ and the plan is empty.
+
 ## 1. The four examples
 
 | Example | Jurisdiction | Horizon | Target $K$ | $\alpha$ | $\mathbb{P}(L \ge K)$ in-sample | $\mathbb{E}[L]$ | Size of $S$ | $S / P$ | Blocked losers |

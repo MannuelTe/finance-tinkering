@@ -8,10 +8,11 @@ from datetime import date
 
 import pandas as pd
 
-# Tokens that mark a tax-sheltered account. Losses there are not deductible, but purchases there
+# Tokens that mark a tax-sheltered account (US, Canada, Swiss pillar 3a). Losses there are not deductible, but purchases there
 # still count for the US wash-sale rule (Rev. Rul. 2008-5) and, on the conservative CRA reading,
 # for the Canadian superficial-loss rule.
-SHELTERED_TOKENS = ("ira", "roth", "401k", "403b", "hsa", "rrsp", "rrif", "tfsa", "resp", "fhsa", "lira")
+SHELTERED_TOKENS = ("ira", "roth", "401k", "403b", "hsa", "rrsp", "rrif", "tfsa", "resp", "fhsa",
+                    "lira", "3a", "pillar")
 
 COLUMNS = ["account", "ticker", "shares", "cost_basis", "acquired", "price", "drip"]
 
