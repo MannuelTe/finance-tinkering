@@ -80,6 +80,12 @@ improved those figures, but selected \$41.5k of holdings instead of \$25.5k. See
 [results](docs/RESULTS.md) for the full comparisons and [learnings](docs/LEARNINGS.md) for what
 changed during the project.
 
+## Animated views
+
+| Losses as the sale date approaches | Confidence estimate converging | Holdings selected as confidence rises |
+|---|---|---|
+| ![Simulated losses approaching the sale date](figures/us_core/loss_fan.gif) | ![Monte Carlo confidence estimate converging](figures/us_core/mc_convergence.gif) | ![Selected holdings as required confidence rises](figures/us_core/frontier_sweep.gif) |
+
 ## How the planner works
 
 For each lot, TaxHarvest simulates prices on a chosen future sale date. It counts a loss only if
