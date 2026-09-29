@@ -2,7 +2,7 @@
 
 Four tests, all measured out of sample on fresh scenarios:
 
-1. seeds        - re-optimise on independent scenario sets; spread of achieved P(L >= K)
+1. seeds        - re-optimise on independent scenario sets; spread of achieved tax-goal coverage
 2. convergence  - the same as a function of the number of optimisation scenarios N
 3. parameters   - hold the plan fixed, redraw the "true" mu and Sigma from their sampling
                   distribution given `est_years` of daily data (Normal / Wishart)
@@ -125,12 +125,17 @@ def frontier(problem, alphas=(0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.975, 0.99),
     rows, plans = [], []
     for a in alphas:
         plan = optimise(_with(problem, confidence=a, n_scenarios=n_in), method)
-        plans.append(plan)
         s = plan.summary()
-        rows.append({"alpha": a, "K": plan.target, "confidence": plan.confidence,
-                     "E[L]": s["E[L]"], "E[tax saved]": s["E[tax saved]"],
-                     "sub-portfolio value": s["sub-portfolio value"],
-                     "status": s["status"]})
+        comparable = plan.target >= plan.requested_target - 1e-9
+        if comparable:
+            plans.append(plan)
+        rows.append({"alpha": a, "tax saving goal": plan.target,
+                     "loss needed for goal": plan.loss_target,
+                     "confidence": plan.confidence,
+                     "E[loss realized]": s["E[loss realized]"] if comparable else None,
+                     "E[tax saved]": s["E[tax saved]"] if comparable else None,
+                     "sub-portfolio value": s["sub-portfolio value"] if comparable else None,
+                     "status": s["status"] if comparable else "requested goal infeasible"})
     return rows, plans
 
 

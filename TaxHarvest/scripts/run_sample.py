@@ -29,11 +29,12 @@ def problem(rules, **kw):
 
 if __name__ == "__main__":
     quick = "--quick" in sys.argv
-    print("=== Sample portfolio, US taxpayer, target = tax rate x E[gains]")
-    report.run(problem(US), ROOT / "figures/sample", "Sample portfolio, US taxpayer",
+    print("=== Sample portfolio, US taxpayer, $1,200 tax-savings goal")
+    report.run(problem(US, tax_savings_goal=1_200), ROOT / "figures/sample",
+               "Sample portfolio, US taxpayer",
                quick=quick)
-    print("\n=== Same portfolio, US taxpayer, target = E[gains] (cancel the whole tax)")
-    print(report.describe(optimise(problem(US, target_mode="offset"))))
+    print("\n=== Same portfolio, full tax-bill goal")
+    print(report.describe(optimise(problem(US))))
     print("\n=== Same portfolio, Swiss resident (amounts in USD)")
     ch_usd = dataclasses.replace(CH, currency="USD")
     print(report.describe(optimise(problem(ch_usd))))

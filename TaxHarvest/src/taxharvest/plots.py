@@ -92,29 +92,29 @@ def plan_overview(plan: HarvestPlan, path: Path, title: str = ""):
     a.xaxis.set_major_formatter(money(cur))
     a.set_xlabel("expected loss at harvest date if the whole lot is sold")
     a.grid(axis="y", visible=False)
-    a.set_title("Which lots form the sub-portfolio S")
+    a.set_title("Candidate lots and expected actual sales")
     from matplotlib.patches import Patch
-    a.legend(handles=[Patch(color=BLUE, label="harvested by the plan (E[loss])"),
-                      Patch(color=BLUE_LIGHT, label="eligible, not needed"),
+    a.legend(handles=[Patch(color=BLUE, label="expected loss actually realized"),
+                      Patch(color=BLUE_LIGHT, label="eligible loss capacity"),
                       Patch(facecolor="none", edgecolor=MUTED, hatch="////",
                             label="blocked by wash-sale / superficial-loss screen")],
              loc="lower right")
 
-    L, K = plan.losses, plan.target
+    L, K = plan.losses, plan.loss_target
     bins = np.linspace(0, np.quantile(L, 0.995) * 1.05 + 1, 60)
     _hist(b, L[L < K], ORANGE, f"L < K  ({np.mean(L < K):.1%})", bins)
     _hist(b, L[L >= K], BLUE, f"L ≥ K  ({np.mean(L >= K):.1%})", bins)
     b.axvline(K, color=INK, lw=1.5)
     b.axvline(L.mean(), color=INK2, lw=1.2, ls="--")
     ymax = b.get_ylim()[1]
-    b.text(K, ymax * 0.97, f"target K = {cur}{K:,.0f} ", fontsize=8, va="top", ha="right",
+    b.text(K, ymax * 0.97, f"loss needed = {cur}{K:,.0f} ", fontsize=8, va="top", ha="right",
            color=INK)
-    b.text(L.mean(), ymax * 0.97, f" E[L] = {cur}{L.mean():,.0f}", fontsize=8, va="top",
+    b.text(L.mean(), ymax * 0.97, f" E[capacity] = {cur}{L.mean():,.0f}", fontsize=8, va="top",
            color=INK2)
     b.xaxis.set_major_formatter(money(cur))
-    b.set_xlabel("harvested loss L across simulated scenarios")
+    b.set_xlabel("potential loss from selected lots before the execution cap")
     b.set_ylabel("scenarios")
-    b.set_title(f"Loss distribution of S: P(L ≥ K) = {plan.confidence:.1%} "
+    b.set_title(f"Tax-saving goal: P(save ≥ goal) = {plan.confidence:.1%} "
                 f"(target {plan.problem.confidence:.0%})")
     b.legend(loc="upper left", bbox_to_anchor=(0, 0.88))
     if title:
@@ -144,38 +144,38 @@ def _raw_expected(plan, i):
 def tax_impact(plan: HarvestPlan, path: Path):
     style()
     cur = _cur(plan)
-    tau = plan.problem.tax_rate
-    G, L = plan.gains, plan.losses
-    before = tau * np.clip(G, 0, None)
-    after = tau * np.clip(G - L, 0, None)
-    saved = before - after
+    before = plan.problem.tax_rate * np.clip(plan.gains, 0, None)
+    saved = plan.tax_savings
+    after = before - saved
     fig, (a, b, c) = plt.subplots(1, 3, figsize=(14, 4))
-    hi = np.quantile(before, 0.995)
-    bins = np.linspace(min(after.min(), before.min()), hi, 60)
-    _hist(a, before, MUTED, f"no harvest  E = {cur}{before.mean():,.0f}", bins, 0.55)
-    _hist(a, after, BLUE, f"with S  E = {cur}{after.mean():,.0f}", bins, 0.8)
-    a.set_title("Capital-gains tax due")
-    a.xaxis.set_major_formatter(money(cur))
-    a.set_ylabel("scenarios")
-    a.legend()
+    a.bar(["No harvest", "With plan"], [before.mean(), after.mean()],
+          color=[MUTED, BLUE], width=0.5)
+    for i, amount in enumerate((before.mean(), after.mean())):
+        a.text(i, amount, f"{cur}{amount:,.0f}", ha="center", va="bottom", fontsize=9)
+    a.set_ylim(0, max(before.mean(), 1) * 1.2)
+    a.set_title("Expected capital-gains tax due")
+    a.yaxis.set_major_formatter(money(cur))
+    a.grid(axis="x", visible=False)
 
-    _hist(b, saved, AQUA, None, 60)
-    b.axvline(saved.mean(), color=INK, lw=1.2)
-    b.text(saved.mean(), b.get_ylim()[1] * 0.95, f"  E = {cur}{saved.mean():,.0f}", fontsize=8,
-           va="top")
-    b.set_title("Tax saved by harvesting S")
+    bins = np.linspace(0, max(plan.target, float(saved.max()), 1) * 1.05, 50)
+    b.hist(saved, bins=bins, weights=np.full(len(saved), 100 / len(saved)), color=AQUA,
+           edgecolor=SURFACE, linewidth=0.5)
+    b.axvline(plan.target, color=INK, lw=1.2, ls="--")
+    b.set_xlabel("tax saved")
+    b.set_ylabel("percent of scenarios")
+    label_cur = cur.replace("$", r"\$")
+    b.set_title(f"Tax-saving goal {label_cur}{plan.target:,.0f}; "
+                f"E = {label_cur}{saved.mean():,.0f}")
     b.xaxis.set_major_formatter(money(cur))
 
     order = np.argsort(plan.port_pnl)
     pct = np.linspace(0, 100, len(order))
-    c.plot(pct, np.maximum.accumulate(L[order][::-1])[::-1] * 0 + _smooth(L[order]), color=BLUE,
-           label="harvested loss L")
-    c.plot(pct, _smooth(np.clip(G[order], 0, None)), color=ORANGE, label="gain base G")
-    c.axhline(plan.target, color=INK, lw=1, ls="--")
-    c.text(1, plan.target, " K", va="bottom", fontsize=8)
+    c.plot(pct, _smooth(saved[order]), color=BLUE, label="tax saved")
+    c.axhline(plan.target, color=INK, lw=1, ls="--", label="goal")
     c.set_xlabel("scenario percentile of P's horizon P&L (bad → good)")
     c.yaxis.set_major_formatter(money(cur))
-    c.set_title("Losses are largest when P does worst")
+    c.set_ylim(0, max(plan.target, float(saved.max()), 1) * 1.08)
+    c.set_title("Tax savings across market outcomes")
     c.legend()
     fig.tight_layout()
     fig.savefig(path, dpi=150)
@@ -192,19 +192,19 @@ def frontier(rows: list[dict], path: Path, cur="$", target_conf=None):
     style()
     alpha = np.array([r["alpha"] for r in rows])
     fig, axes = plt.subplots(1, 3, figsize=(14, 3.8))
-    series = [("sub-portfolio value", "Size of S (market value sold)", BLUE),
-              ("E[L]", "Expected harvested loss E[L]", ORANGE),
+    series = [("sub-portfolio value", "Candidate pool at current prices", BLUE),
+              ("E[loss realized]", "Expected loss actually realized", ORANGE),
               ("E[tax saved]", "Expected tax saved", AQUA)]
     for ax, (key, title, col) in zip(axes, series):
         ax.plot(alpha, [r[key] for r in rows], color=col, marker="o", ms=4)
         ax.set_title(title)
         ax.yaxis.set_major_formatter(money(cur))
         ax.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
-        ax.set_xlabel("confidence P(L ≥ K)")
+        ax.set_xlabel("confidence P(tax saved ≥ goal)")
         if target_conf:
             ax.axvline(target_conf, color=MUTED, lw=1, ls=":")
-    axes[1].axhline(rows[0]["K"], color=INK, lw=1, ls="--")
-    axes[1].text(alpha[0], rows[0]["K"], " K", va="bottom", fontsize=8)
+    axes[1].axhline(rows[0]["loss needed for goal"], color=INK, lw=1, ls="--")
+    axes[1].text(alpha[0], rows[0]["loss needed for goal"], " loss needed", va="bottom", fontsize=8)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
@@ -227,7 +227,7 @@ def robustness(rob: dict, path: Path, alpha: float):
     a.text(-0.45, alpha, f"target {alpha:.0%}", va="bottom", fontsize=8, color=CRITICAL)
     a.set_xticks(range(len(methods)), methods)
     a.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
-    a.set_ylabel("out-of-sample P(L ≥ K)")
+    a.set_ylabel("out-of-sample P(tax saved ≥ goal)")
     a.set_title(f"Re-optimised on {rob['n_seeds']} independent scenario sets")
 
     b = ax[0, 1]
@@ -241,7 +241,7 @@ def robustness(rob: dict, path: Path, alpha: float):
     b.set_xscale("log")
     b.yaxis.set_major_formatter(PercentFormatter(1, decimals=1))
     b.set_xlabel("scenarios used in the optimisation (N)")
-    b.set_ylabel("out-of-sample P(L ≥ K)")
+    b.set_ylabel("out-of-sample P(tax saved ≥ goal)")
     b.set_title("Sample-average approximation converges in N")
     b.legend(loc="lower right")
 
@@ -254,7 +254,7 @@ def robustness(rob: dict, path: Path, alpha: float):
            f"  median {np.median(v):.1%}\n  P(conf ≥ {alpha - 0.05:.0%}) = "
            f"{np.mean(v >= alpha - 0.05):.0%}", va="top", fontsize=8)
     c.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
-    c.set_xlabel("P(L ≥ K) when the true μ, Σ differ from the estimates")
+    c.set_xlabel("P(tax saved ≥ goal) when the true μ, Σ differ from the estimates")
     c.set_ylabel("parameter draws")
     c.set_title(f"Estimation error: μ, Σ drawn from {rob['est_years']}y sampling distribution")
 
@@ -273,7 +273,7 @@ def robustness(rob: dict, path: Path, alpha: float):
     d.set_yticks(yy, names, fontsize=8)
     d.set_xlim(0, 1.08)
     d.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
-    d.set_xlabel("P(L ≥ K), 200k fresh scenarios, 95% Wilson CI")
+    d.set_xlabel("P(tax saved ≥ goal), 200k fresh scenarios, 95% Wilson CI")
     d.set_title("Plan built on the base model, tested under other F")
     d.grid(axis="y", visible=False)
     fig.tight_layout()
@@ -345,7 +345,7 @@ def animate_loss_fan(plan: HarvestPlan, path: Path, n=3000, frames=None, seed=5)
     L = np.hstack([np.full((n, 1), L0), L])
     t = np.arange(days + 1)
     qs = np.quantile(L, [0.05, 0.25, 0.5, 0.75, 0.95], axis=0)
-    K = plan.target
+    K = plan.loss_target
     fig, (a, b) = plt.subplots(1, 2, figsize=(12, 4.4), gridspec_kw={"width_ratios": [1.3, 1]})
     hi = np.quantile(L, 0.995)
     bins = np.linspace(0, hi, 50)
@@ -361,7 +361,7 @@ def animate_loss_fan(plan: HarvestPlan, path: Path, n=3000, frames=None, seed=5)
         for j in range(12):
             a.plot(t[:k + 1], L[j, :k + 1], color=MUTED, lw=0.6, alpha=0.6)
         a.axhline(K, color=INK, lw=1.2, ls="--")
-        a.text(0.5, K, " target K", va="bottom", fontsize=8)
+        a.text(0.5, K, " loss needed", va="bottom", fontsize=8)
         a.set_xlim(0, days)
         a.set_ylim(0, hi)
         a.yaxis.set_major_formatter(money(cur))
@@ -375,7 +375,7 @@ def animate_loss_fan(plan: HarvestPlan, path: Path, n=3000, frames=None, seed=5)
         b.set_xlim(0, hi)
         b.set_ylim(0, n * 0.25)
         b.xaxis.set_major_formatter(money(cur))
-        b.set_title(f"day {k}:  P(L ≥ K) = {np.mean(Lk >= K):.1%}")
+        b.set_title(f"day {k}:  P(tax saved ≥ goal) = {np.mean(Lk >= K):.1%}")
         b.set_xlabel("loss L")
         fig.tight_layout()
 
@@ -385,12 +385,13 @@ def animate_loss_fan(plan: HarvestPlan, path: Path, n=3000, frames=None, seed=5)
 
 
 def animate_mc_convergence(plan: HarvestPlan, path: Path, total=100_000, seed=9):
-    """Running Monte Carlo estimate of P(L >= K) with a Wilson band as samples accumulate."""
+    """Running Monte Carlo estimate of P(tax saved >= goal) with a Wilson band as samples accumulate."""
     from .engine import evaluate
     style()
     cur = _cur(plan)
-    L = evaluate(plan, total, np.random.default_rng(seed))["losses"]
-    hit = (L >= plan.target).astype(float)
+    result = evaluate(plan, total, np.random.default_rng(seed))
+    L = result["losses"]
+    hit = (result["tax_savings"] >= plan.target).astype(float)
     ns = np.unique(np.geomspace(20, total, 45).astype(int))
     est = np.cumsum(hit)[ns - 1] / ns
     lo, hi = wilson(est, ns)
@@ -409,12 +410,12 @@ def animate_mc_convergence(plan: HarvestPlan, path: Path, total=100_000, seed=9)
         a.set_ylim(max(0, plan.problem.confidence - 0.3), 1.0)
         a.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
         a.set_xlabel("fresh Monte Carlo scenarios")
-        a.set_title(f"P(L ≥ K) = {est[k]:.2%}  [{lo[k]:.2%}, {hi[k]:.2%}]  n = {ns[k]:,}")
+        a.set_title(f"P(tax saved ≥ goal) = {est[k]:.2%}  [{lo[k]:.2%}, {hi[k]:.2%}]  n = {ns[k]:,}")
         a.legend(loc="lower right")
         s = L[:ns[k]]
-        b.hist(s[s < plan.target], bins=bins, color=ORANGE, edgecolor=SURFACE, lw=0.5)
-        b.hist(s[s >= plan.target], bins=bins, color=BLUE, edgecolor=SURFACE, lw=0.5)
-        b.axvline(plan.target, color=INK, lw=1.2, ls="--")
+        b.hist(s[s < plan.loss_target], bins=bins, color=ORANGE, edgecolor=SURFACE, lw=0.5)
+        b.hist(s[s >= plan.loss_target], bins=bins, color=BLUE, edgecolor=SURFACE, lw=0.5)
+        b.axvline(plan.loss_target, color=INK, lw=1.2, ls="--")
         b.xaxis.set_major_formatter(money(cur))
         b.set_title("Out-of-sample loss distribution")
         b.set_xlabel("loss L")
@@ -433,7 +434,7 @@ def animate_frontier(plans: list[HarvestPlan], path: Path):
     fig, (a, b) = plt.subplots(1, 2, figsize=(12, 0.26 * len(tick) + 2.5),
                                gridspec_kw={"width_ratios": [1, 1.2]})
     y = np.arange(len(tick))[::-1]
-    hi = np.quantile(plans[-1].losses, 0.995)
+    hi = max(np.quantile(pl.losses, 0.995) for pl in plans) + 1
     bins = np.linspace(0, hi, 50)
     frames = list(range(len(plans))) + [len(plans) - 1] * 6
 
@@ -450,13 +451,13 @@ def animate_frontier(plans: list[HarvestPlan], path: Path):
         a.set_title(f"confidence {pl.problem.confidence:.0%}: S = {cur}"
                     f"{pl.subportfolio_value:,.0f}")
         L = pl.losses
-        b.hist(L[L < pl.target], bins=bins, color=ORANGE, edgecolor=SURFACE, lw=0.5)
-        b.hist(L[L >= pl.target], bins=bins, color=BLUE, edgecolor=SURFACE, lw=0.5)
-        b.axvline(pl.target, color=INK, lw=1.2, ls="--")
+        b.hist(L[L < pl.loss_target], bins=bins, color=ORANGE, edgecolor=SURFACE, lw=0.5)
+        b.hist(L[L >= pl.loss_target], bins=bins, color=BLUE, edgecolor=SURFACE, lw=0.5)
+        b.axvline(pl.loss_target, color=INK, lw=1.2, ls="--")
         b.axvline(L.mean(), color=INK2, lw=1, ls=":")
         b.set_xlim(0, hi)
         b.xaxis.set_major_formatter(money(cur))
-        b.set_title(f"P(L ≥ K) = {pl.confidence:.1%},  E[L] = {cur}{L.mean():,.0f}")
+        b.set_title(f"P(tax saved ≥ goal) = {pl.confidence:.1%},  E[loss sold] = {cur}{pl.expected_loss:,.0f}")
         b.set_xlabel("loss L")
         fig.tight_layout()
 
@@ -486,7 +487,7 @@ def nominal_vs_robust(nom: HarvestPlan, rob: HarvestPlan, mis_nom: dict, mis_rob
     a.set_xlim(max(0, min(min(m["confidence"] for m in mis_nom.values()) - 0.1, alpha - 0.2)),
                1.02)
     a.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
-    a.set_xlabel("out-of-sample P(L ≥ K)")
+    a.set_xlabel("out-of-sample P(tax saved ≥ goal)")
     a.grid(axis="y", visible=False)
     a.set_title("Confidence when F is not what the optimiser assumed")
     a.legend(loc="lower right")
@@ -500,7 +501,7 @@ def nominal_vs_robust(nom: HarvestPlan, rob: HarvestPlan, mis_nom: dict, mis_rob
         b.text(k, v, f"{cur}{v:,.0f}", ha="center", va="bottom", fontsize=8)
     b.set_xticks([0, 1], ["nominal", "robust"])
     b.yaxis.set_major_formatter(money(cur))
-    b.set_title("Price of robustness: size of S")
+    b.set_title("Price of robustness: candidate pool")
     b.grid(axis="x", visible=False)
     fig.tight_layout()
     fig.savefig(path, dpi=150)

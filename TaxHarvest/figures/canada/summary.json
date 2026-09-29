@@ -2,175 +2,139 @@
   "jurisdiction": "CA",
   "harvest_on": "2026-11-21",
   "tax_rate": 0.26765,
-  "target_mode": "tax",
-  "E[gain base]": 21724.67762727512,
-  "target K": 5814.609966940186,
+  "realized gain base": 20000.0,
+  "requested tax saving goal": 1500,
+  "tax saving goal": 1500,
+  "max reliable tax saving": 2124.1032979655783,
+  "loss needed for goal": 5604.3340183074915,
   "confidence (target)": 0.9,
-  "P(L >= K) in-sample": 0.9008,
-  "E[L]": 7288.541505652684,
-  "L 5/50/95%": [
-    5406.088834997977,
-    7334.483181280813,
-    9020.583216305358
+  "P(tax saved >= goal) in-sample": 0.9008,
+  "E[loss capacity]": 7024.565030240419,
+  "E[loss realized]": 5548.543848547073,
+  "E[unused loss capacity]": 1476.021181693345,
+  "E[market sold at current prices]": 9983.055940022465,
+  "realized loss 5/50/95%": [
+    5210.291050856722,
+    5604.3340183074915,
+    5604.3340183074915
   ],
-  "E[tax saved]": 1884.063082818165,
-  "sub-portfolio value": 12846.037791633877,
-  "sub-portfolio share of P": 0.05868718439231521,
-  "tracking error 31d ($, 1sd)": 770.5124429424698,
+  "E[tax saved]": 1485.0677610636242,
+  "sub-portfolio value": 12380.779855376217,
+  "sub-portfolio share of P": 0.05656165131059535,
+  "tracking error 31d ($, 1sd)": 742.6060149154769,
   "status": "optimal",
-  "seconds": 10.36,
+  "seconds": 11.28,
   "frontier": [
     {
       "alpha": 0.5,
-      "K": 5802.561010818486,
+      "tax saving goal": 1500,
+      "loss needed for goal": 5604.3340183074915,
       "confidence": 0.5174,
-      "E[L]": 5802.561010817834,
-      "E[tax saved]": 1512.9826994530038,
-      "sub-portfolio value": 10217.535916044082,
-      "status": "optimal"
-    },
-    {
-      "alpha": 0.6,
-      "K": 5802.561010818486,
-      "confidence": 0.6016,
-      "E[L]": 6000.27268233464,
-      "E[tax saved]": 1562.9913167550358,
-      "sub-portfolio value": 10565.679796130462,
+      "E[loss realized]": 5267.546936509128,
+      "E[tax saved]": 1409.858937556668,
+      "sub-portfolio value": 9868.484624427474,
       "status": "optimal"
     },
     {
       "alpha": 0.7,
-      "K": 5802.561010818486,
+      "tax saving goal": 1500,
+      "loss needed for goal": 5604.3340183074915,
       "confidence": 0.7012,
-      "E[L]": 6260.650592679967,
-      "E[tax saved]": 1628.5078899708963,
-      "sub-portfolio value": 11024.170563524034,
+      "E[loss realized]": 5412.920489033526,
+      "E[tax saved]": 1448.768168889823,
+      "sub-portfolio value": 10647.563032528467,
       "status": "optimal"
     },
     {
       "alpha": 0.8,
-      "K": 5802.561010818486,
+      "tax saving goal": 1500,
+      "loss needed for goal": 5604.3340183074915,
       "confidence": 0.8028,
-      "E[L]": 6647.76883885906,
-      "E[tax saved]": 1725.2792058368168,
-      "sub-portfolio value": 11705.834155982046,
-      "status": "optimal"
-    },
-    {
-      "alpha": 0.85,
-      "K": 5802.561010818486,
-      "confidence": 0.852,
-      "E[L]": 6887.599934626812,
-      "E[tax saved]": 1784.903311261982,
-      "sub-portfolio value": 12128.144723716312,
+      "E[loss realized]": 5486.363902913389,
+      "E[tax saved]": 1468.4252986147687,
+      "sub-portfolio value": 11305.939644705637,
       "status": "optimal"
     },
     {
       "alpha": 0.9,
-      "K": 5802.561010818486,
-      "confidence": 0.9016,
-      "E[L]": 7271.307889400604,
-      "E[tax saved]": 1879.5920625527024,
-      "sub-portfolio value": 12803.803247920347,
+      "tax saving goal": 1500,
+      "loss needed for goal": 5604.3340183074915,
+      "confidence": 0.9012,
+      "E[loss realized]": 5549.739136969749,
+      "E[tax saved]": 1485.3876800099533,
+      "sub-portfolio value": 12364.05613834329,
       "status": "optimal"
     },
     {
       "alpha": 0.95,
-      "K": 5802.561010818486,
-      "confidence": 0.9504,
-      "E[L]": 7790.587249607575,
-      "E[tax saved]": 2005.5703893695459,
-      "sub-portfolio value": 19478.96839209993,
-      "status": "optimal"
-    },
-    {
-      "alpha": 0.975,
-      "K": 5802.561010818486,
-      "confidence": 0.9758,
-      "E[L]": 8348.650995719132,
-      "E[tax saved]": 2132.7463691127314,
-      "sub-portfolio value": 29228.94938976448,
-      "status": "optimal"
-    },
-    {
-      "alpha": 0.99,
-      "K": 5802.561010818486,
-      "confidence": 0.9906,
-      "E[L]": 10359.43175892937,
-      "E[tax saved]": 2531.2091501771697,
-      "sub-portfolio value": 51155.597505843245,
+      "tax saving goal": 1500,
+      "loss needed for goal": 5604.3340183074915,
+      "confidence": 0.9508,
+      "E[loss realized]": 5578.307718657433,
+      "E[tax saved]": 1493.034060898662,
+      "sub-portfolio value": 14742.72150428559,
       "status": "optimal"
     }
   ],
   "robustness": {
     "seeds_mean": {
-      "mean": 0.519014,
-      "cvar": 0.9606540000000001,
-      "calibrated": 0.9017109999999999,
-      "milp": 0.8996169999999999
+      "mean": 0.5178,
+      "cvar": 0.9627899999999999,
+      "calibrated": 0.9026725
     },
     "convergence": {
       "N": [
         250,
-        500,
         1000,
-        2000,
-        4000,
-        8000
+        4000
       ],
       "mean": [
-        0.8971959999999999,
-        0.897458,
-        0.899624,
-        0.9009579999999999,
-        0.8992739999999999,
-        0.9005380000000001
+        0.9031933333333333,
+        0.9013300000000001,
+        0.9021733333333333
       ],
       "sd": [
-        0.01278751985335701,
-        0.012310831653466787,
-        0.009428485774502702,
-        0.007005047894197447,
-        0.00611212107209928,
-        0.004807691337846045
+        0.01031731661926794,
+        0.007787648339946215,
+        0.006061910223317041
       ]
     },
-    "param_median": 0.8991750000000001,
-    "param_p05": 0.84498,
+    "param_median": 0.902825,
+    "param_p05": 0.8470225,
     "misspec": {
       "optimised model": {
-        "confidence": 0.902215,
+        "confidence": 0.90176,
         "ci": [
-          0.9009055001054003,
-          0.9035090486999462
+          0.8991201321770149,
+          0.9043381365172848
         ]
       },
       "Student-t, df=4": {
-        "confidence": 0.905715,
+        "confidence": 0.9042,
         "ci": [
-          0.9044264640754462,
-          0.9069879502764828
+          0.9015890588797497,
+          0.9067488349031951
         ]
       },
       "volatility +50%": {
-        "confidence": 0.806415,
+        "confidence": 0.80936,
         "ci": [
-          0.80467748664686,
-          0.8081407423405975
+          0.8058931887326092,
+          0.812779277424471
         ]
       },
       "persistent crisis regime": {
-        "confidence": 0.91676,
+        "confidence": 0.9192,
         "ci": [
-          0.9155412846658466,
-          0.9179627053895123
+          0.9167788583510145,
+          0.9215567306490114
         ]
       },
       "strong rally (+20%/yr drift)": {
-        "confidence": 0.82257,
+        "confidence": 0.82788,
         "ci": [
-          0.8208894789105252,
-          0.8242381294783729
+          0.8245460421138482,
+          0.8311635784045881
         ]
       }
     }
@@ -182,42 +146,42 @@
       "drift -10%/yr",
       "Student-t, df=4"
     ],
-    "sub-portfolio value": 20314.36672444103,
-    "E[L]": 7870.067208422411,
+    "sub-portfolio value": 14908.140790717349,
+    "E[loss realized]": 5579.275146224577,
     "misspec": {
       "optimised model": {
-        "confidence": 0.950365,
+        "confidence": 0.94848,
         "ci": [
-          0.9494044435515817,
-          0.9513082555588938
+          0.9465076731660126,
+          0.9503834168977557
         ]
       },
       "Student-t, df=4": {
-        "confidence": 0.951725,
+        "confidence": 0.94898,
         "ci": [
-          0.9507768763847342,
-          0.9526557704809848
+          0.947016549428431,
+          0.9508744638092399
         ]
       },
       "volatility +50%": {
-        "confidence": 0.868315,
+        "confidence": 0.86666,
         "ci": [
-          0.8668259239957485,
-          0.8697899270869838
+          0.8636520907798361,
+          0.8696115711064939
         ]
       },
       "persistent crisis regime": {
-        "confidence": 0.959225,
+        "confidence": 0.95838,
         "ci": [
-          0.9583493839323565,
-          0.9600829748188966
+          0.9565938811826541,
+          0.9600956877243877
         ]
       },
       "strong rally (+20%/yr drift)": {
-        "confidence": 0.87916,
+        "confidence": 0.89628,
         "ci": [
-          0.8777242119047772,
-          0.8805812225644376
+          0.8935769448422274,
+          0.8989221658660985
         ]
       }
     }

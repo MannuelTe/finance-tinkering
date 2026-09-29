@@ -1,7 +1,8 @@
 """Command line: run the examples, a CSV portfolio, or type one in interactively.
 
     taxharvest examples [--only us_core] [--quick]
-    taxharvest run book.csv --jurisdiction CA --confidence 0.9 --horizon-days 40
+    taxharvest run book.csv --jurisdiction CA --realized-gains 20000 \
+        --tax-savings-goal 1500 --confidence 0.9 --horizon-days 40
     taxharvest interactive
 """
 
@@ -76,16 +77,11 @@ def _model(portfolio, universe, history_path):
 def _build(args, portfolio, universe, extra=None, ask=False) -> HarvestProblem:
     _ensure_known(portfolio, universe, extra, ask)
     rules = JURISDICTIONS[args.jurisdiction.upper()]
-    target_mode, override = args.target, None
-    try:
-        override, target_mode = float(args.target), "fixed"
-    except ValueError:
-        pass
     return HarvestProblem(
         portfolio, universe, _model(portfolio, universe, args.history), rules,
         tax_rate=args.tax_rate if args.tax_rate is not None else rules.default_tax_rate,
-        confidence=args.confidence, horizon_days=args.horizon_days, target_mode=target_mode,
-        realized_gains=args.realized_gains, target_override=override,
+        confidence=args.confidence, horizon_days=args.horizon_days,
+        realized_gains=args.realized_gains, tax_savings_goal=args.tax_savings_goal,
         n_scenarios=args.scenarios,
     )
 
@@ -130,17 +126,17 @@ def cmd_run(args):
 
 
 def cmd_interactive(args):
-    print("Tax-loss harvest planner. Wash-sale (US) / superficial-loss (CA) aware.\n")
+    print("Tax-saving planner. Wash-sale (US) / superficial-loss (CA) aware.\n")
     args.jurisdiction = _ask("Jurisdiction US, CA or CH", "US", str.upper)
     rules = JURISDICTIONS[args.jurisdiction]
     print(f"  {rules.note}")
     args.tax_rate = _ask("Effective tax rate on capital gains", round(rules.default_tax_rate, 4),
                          float)
     args.realized_gains = _ask("Gains already realised this tax year", 0.0, float)
-    args.confidence = _ask("Required confidence P(losses >= target)", 0.9, float)
+    args.confidence = _ask("Required confidence P(tax saved >= goal)", 0.9, float)
     args.horizon_days = _ask("Trading days until you harvest", 40, int)
-    args.target = _ask("Target: 'tax' (losses = rate x E[gains]), 'offset' (losses = E[gains]) "
-                       "or an amount", "tax")
+    default_goal = max(args.realized_gains, 0.0) * args.tax_rate
+    args.tax_savings_goal = _ask("Tax saving wanted in dollars", round(default_goal, 2), float)
     today = date.today().isoformat()  # noqa: DTZ011 - local calendar date is intended
     as_of = date.fromisoformat(_ask("Today's date", today))
     print("\nType one lot per line:  TICKER SHARES COST_BASIS ACQUIRED PRICE [ACCOUNT] [drip]")
@@ -199,8 +195,10 @@ def main(argv=None):
     r.add_argument("--tax-rate", type=float)
     r.add_argument("--confidence", type=float, default=0.9)
     r.add_argument("--horizon-days", type=int, default=40)
-    r.add_argument("--realized-gains", type=float, default=0.0)
-    r.add_argument("--target", default="tax", help="'tax', 'offset' or a fixed amount")
+    r.add_argument("--realized-gains", type=float, default=0.0,
+                   help="taxable gains actually realized or explicitly planned this year")
+    r.add_argument("--tax-savings-goal", type=float,
+                   help="dollars of tax to save; defaults to the full modeled tax bill")
     common(r, "out")
     r.set_defaults(fn=cmd_run)
 

@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from taxharvest.engine import HarvestProblem, coverage, evaluate, optimise, solve_x
+from taxharvest.engine import HarvestProblem, coverage, evaluate, optimise, simulate, solve_x
 from taxharvest.model import Universe, fit_gmm, fit_regime_model
 from taxharvest.portfolio import Portfolio
+from taxharvest.robustness import frontier
 from taxharvest.washsale import CA, CH, US, pick_replacements, screen
 
 AS_OF = date(2026, 9, 24)
@@ -107,7 +108,7 @@ def test_mean_method_matches_target():
 def test_infeasible_and_no_target():
     Lm, c, ub = _toy()
     x, info = solve_x(Lm, 100.0, 0.9, c, ub, "calibrated")
-    assert np.all(x == ub) and info["status"].startswith("infeasible")
+    assert np.all(x == 0) and info["status"].startswith("infeasible")
     x, info = solve_x(Lm, -1.0, 0.9, c, ub, "calibrated")
     assert np.all(x == 0)
 
@@ -121,15 +122,46 @@ def test_end_to_end_plan_respects_screen_and_holds_out_of_sample():
         VOO 60 612 2025-12-10 575 taxable
         AAPL 50 190 2023-06-01 228 taxable
         buy IVV 2026-11-01 ira
-    """, realized_gains=15_000, confidence=0.9, horizon_days=40)
+    """, realized_gains=15_000, tax_savings_goal=1_000,
+        confidence=0.9, horizon_days=40)
     plan = optimise(pr)
     df = plan.trades()
-    assert df.loc[df.ticker == "VOO", "sell_frac"].item() == 0  # blocked by IRA buy of IVV
+    assert df.loc[df.ticker == "VOO", "max_sell_frac"].item() == 0  # blocked by IRA buy
     assert plan.confidence == pytest.approx(0.9, abs=0.01)
     oos = evaluate(plan, 50_000, np.random.default_rng(99))["confidence"]
     assert oos > 0.85
+    assert plan.target == 1_000
+    assert plan.loss_target == pytest.approx(1_000 / pr.tax_rate)
+    assert np.allclose(plan.executed_lot_losses().sum(0), plan.realized_losses)
+    assert np.all(plan.realized_losses <= plan.loss_target + 1e-8)
+    assert plan.expected_unused_capacity > 0
+    assert 0 < plan.expected_market_sold <= plan.subportfolio_value
+    assert np.all(plan.tax_savings <= plan.target + 1e-8)
+    assert np.all(simulate(pr, n=100).gains == 15_000)  # paper P&L is not taxable gains
+    prices = {lot.ticker: lot.cost_basis * 0.5 for lot in pr.portfolio.lots}
+    orders = plan.execute(prices)
+    assert orders.realized_loss.sum() <= plan.loss_target + 1e-8
+    assert orders.tax_saved.sum() == pytest.approx(plan.target, abs=0.01)
+    assert orders.attrs["goal_met"]
+    assert all(orders.sell_shares > 0)
     for t, r in plan.replacements.items():
         assert pr.universe.group(r.buy) != pr.universe.group(t)
+
+
+def test_unattainable_tax_goal_is_reported_and_reduced():
+    pr = _problem("VTI 100 318 2025-11-20 292 taxable", realized_gains=1_000,
+                  tax_savings_goal=500)
+    plan = optimise(pr)
+    assert plan.requested_target == 500
+    assert plan.target <= pr.tax_rate * pr.realized_gains
+    assert plan.target < plan.requested_target
+    assert plan.confidence >= pr.confidence
+    assert "infeasible" in plan.info["status"]
+    assert np.all(plan.realized_losses <= plan.loss_target + 1e-8)
+    rows, comparable_plans = frontier(pr, alphas=(0.9,), n_in=500)
+    assert rows[0]["status"] == "requested goal infeasible"
+    assert rows[0]["sub-portfolio value"] is None
+    assert comparable_plans == []
 
 
 def test_switzerland_harvests_nothing():

@@ -83,16 +83,16 @@ def _problem(book, as_of, rules, universe, model=None, **kw):
 def us_core() -> Example:
     uni = Universe.default()
     pr = _problem(US_BOOK, AS_OF, US, uni, confidence=0.90, horizon_days=40,
-                  realized_gains=15_000, target_mode="tax")
+                  realized_gains=15_000, tax_savings_goal=1_000)
     return Example("us_core", "US taxpayer, harvest in ~8 weeks", pr,
                    "Taxable + IRA + spouse. IRA contribution blocks VOO, spouse blocks NKE, "
-                   "DRIP blocks INTC. Target: losses = 23.8% x expected gains, 90% confidence.")
+                   "DRIP blocks INTC. Goal: save $1,000 of tax with 90% confidence.")
 
 
 def canada() -> Example:
     uni = Universe.default()
     pr = _problem(CA_BOOK, AS_OF, CA, uni, confidence=0.90, horizon_days=40,
-                  realized_gains=20_000, target_mode="tax")
+                  realized_gains=20_000, tax_savings_goal=1_500)
     return Example("canada", "Canadian taxpayer, superficial-loss rule", pr,
                    "Spouse's planned ZCN buy blocks XIC (same index), TFSA DRIP on XUS blocks "
                    "VFV. Tax rate 50% inclusion x 53.53%.")
@@ -123,7 +123,7 @@ def learned_regime(days_history=2500, seed=11) -> Example:
     history = pd.DataFrame(daily, columns=p.tickers)
     fitted, fits = fit_regime_model(history, k_max=3, restarts=2, seed=seed)
     pr = HarvestProblem(p, uni, fitted, US, tax_rate=US.default_tax_rate, confidence=0.90,
-                        horizon_days=40, realized_gains=15_000, target_mode="tax")
+                        horizon_days=40, realized_gains=15_000, tax_savings_goal=825)
     return Example("learned_regime", "US book, F_P learned from 10y of daily returns", pr,
                    "Gaussian HMM (EM mixture init + Baum-Welch, k by BIC) learned from history. "
                    "Fat, clustered tails vs the Gaussian factor model.", true_model=true,
@@ -133,10 +133,10 @@ def learned_regime(days_history=2500, seed=11) -> Example:
 def year_end() -> Example:
     uni = Universe.default()
     pr = _problem(YEAR_END_BOOK, date(2026, 12, 10), US, uni, confidence=0.95, horizon_days=5,
-                  realized_gains=9_000, target_mode="offset")
+                  realized_gains=9_000)
     return Example("year_end", "Year-end sprint, 5 trading days, offset all gains", pr,
                    "Short horizon: losses are nearly known. A VTI lot bought 9 days ago "
-                   "blocks the old VTI lot. Target: losses = E[gains] (full offset), 95%.")
+                   "blocks the old VTI lot. Goal: save the full modeled tax bill, 95%.")
 
 
 EXAMPLES = {"us_core": us_core, "canada": canada, "learned_regime": learned_regime,

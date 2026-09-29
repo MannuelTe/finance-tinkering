@@ -1,15 +1,15 @@
-"""Chance-constrained selection of the harvest sub-portfolio S from P.
+"""Chance-constrained selection of lots for a dollar tax-savings goal.
 
 Notation (all per scenario s = 1..N drawn from F_P):
 
     l[i, s] = shares_i * max(0, basis_i - price_i,s)     loss on lot i at the harvest date
     L_s(x)  = sum_i x_i * l[i, s]                         loss realised by the plan x in [0, 1]^n
-    G_s     = realised gains YTD + dollar return of the taxable part of P over the horizon
-    K       = tax_rate * E[G]    ("tax" target: losses equal the tax on the expected gains)
-            | E[G]               ("offset" target: losses large enough to cancel that tax)
+    G       = gains already realised (or explicitly expected to be realised) this tax year
+    T       = desired tax saving in dollars
+    K       = T / tax_rate       loss needed to save T under the flat-rate model
 
-A plan is a set of *conditional* sell orders: on the harvest date, sell fraction x_i of lot i
-if it is below its basis, and buy a wash-sale-safe replacement with the proceeds.
+A plan selects maximum fractions of lots. On the harvest date, sell eligible losing shares
+only until the tax-savings goal is reached; the last sale may be partial.
 
 Methods (all minimise c'x, the size of S plus a tracking penalty for poor replacements):
 
@@ -50,9 +50,8 @@ class HarvestProblem:
     tax_rate: float
     confidence: float = 0.90
     horizon_days: int = 40  # trading days from as_of to the harvest date
-    target_mode: str = "tax"  # "tax" | "offset"
-    realized_gains: float = 0.0  # gains already realised this tax year
-    target_override: float | None = None
+    realized_gains: float = 0.0  # gains actually realised or explicitly planned this tax year
+    tax_savings_goal: float | None = None  # dollars; None means the full modelled tax bill
     tracking_penalty: float = 5.0  # cost per $ sold per unit of (1 - corr) to the replacement
     n_scenarios: int = 10_000
     # extra models the plan must also satisfy (distributionally robust); name -> model
@@ -85,7 +84,6 @@ def simulate(problem: HarvestProblem, n: int | None = None, rng=None,
     shares = np.array([lot.shares for lot in p.lots])
     basis = np.array([lot.cost_basis for lot in p.lots])
     price0 = np.array([lot.price for lot in p.lots])
-    taxable = np.array([lot.taxable for lot in p.lots])
     prices = price0[:, None] * np.exp(R[:, idx].T)  # (n_lots, N)
     raw = shares[:, None] * np.clip(basis[:, None] - prices, 0, None)
     pnl_lot = shares[:, None] * (prices - price0[:, None])
@@ -94,16 +92,18 @@ def simulate(problem: HarvestProblem, n: int | None = None, rng=None,
     return Scenarios(
         losses=raw * eligible[:, None],
         raw_losses=raw,
-        gains=problem.realized_gains + (pnl_lot * taxable[:, None]).sum(0),
+        gains=np.full(n, problem.realized_gains),
         port_pnl=pnl_lot.sum(0),
     )
 
 
-def target_from(problem: HarvestProblem, sc: Scenarios) -> float:
-    if problem.target_override is not None:
-        return problem.target_override
-    eg = max(sc.gains.mean(), 0.0)
-    return problem.tax_rate * eg if problem.target_mode == "tax" else eg
+def target_from(problem: HarvestProblem) -> float:
+    """Tax saving sought, never an amount of losses."""
+    if problem.tax_savings_goal is not None:
+        if problem.tax_savings_goal < 0:
+            raise ValueError("tax_savings_goal must be nonnegative")
+        return problem.tax_savings_goal
+    return problem.tax_rate * max(problem.realized_gains, 0.0)
 
 
 # ----------------------------------------------------------------------------- LP / MILP
@@ -186,6 +186,26 @@ def coverage(Lm, x, K) -> float:
     return min(float(np.mean(x @ L >= K * (1 - 1e-9))) for L in _as_list(Lm))
 
 
+def _prune_feasible_pool(Lms, K, alpha, c, ub):
+    """Keep a feasible candidate pool when the CVaR approximation cannot size one."""
+    x = ub.copy()
+    for i in np.argsort(-c):
+        if x[i] <= 0:
+            continue
+        x[i] = 0.0
+        if coverage(Lms, x, K) >= alpha:
+            continue
+        lo, hi = 0.0, ub[i]
+        for _ in range(12):
+            x[i] = (lo + hi) / 2
+            if coverage(Lms, x, K) >= alpha:
+                hi = x[i]
+            else:
+                lo = x[i]
+        x[i] = hi
+    return x
+
+
 def solve_x(Lm, K, alpha, c, ub, method="calibrated", milp_scenarios=1500, rng=None):
     """Return (x, info). ``Lm`` is a loss matrix or a list of them (ambiguity set)."""
     Lms = _as_list(Lm)
@@ -196,17 +216,19 @@ def solve_x(Lm, K, alpha, c, ub, method="calibrated", milp_scenarios=1500, rng=N
     best_cov = coverage(Lms, x_all, K)
     if method == "mean":
         if (x_all @ Lms[0]).mean() < K:
-            return x_all, {"status": "infeasible: E[L] of every eligible lot < K; using all"}
+            return np.zeros(n), {"status": "infeasible: mean loss capacity below goal; no trades",
+                                 "max_coverage": best_cov}
         x, res = _solve_mean(Lms[0], K, c, ub)
         return x, {"status": res.message}
     if best_cov < alpha:
-        return x_all, {"status": f"infeasible: harvesting everything eligible reaches only "
-                                 f"P(L>=K)={best_cov:.1%} < {alpha:.0%}; using all"}
+        return np.zeros(n), {"status": f"infeasible: even every eligible lot reaches the "
+                                   f"tax goal in only {best_cov:.1%} of scenarios; no trades",
+                             "max_coverage": best_cov}
     if method == "cvar":
         x, res = _solve_cvar(Lms, K, alpha, c, ub)
         if x is None:
-            return x_all, {"status": f"CVaR constraint infeasible at {alpha:.0%} (stricter than "
-                                     f"the chance constraint); using all"}
+            return np.zeros(n), {"status": "CVaR constraint infeasible; no trades",
+                                 "max_coverage": best_cov}
         return x, {"status": res.message}
     if method == "milp":
         rng = rng or np.random.default_rng(0)
@@ -215,7 +237,8 @@ def solve_x(Lm, K, alpha, c, ub, method="calibrated", milp_scenarios=1500, rng=N
                 for L in Lms]
         x, res = _solve_milp(subs, K, alpha, c, ub)
         if x is None:
-            return x_all, {"status": f"milp failed ({res.message}); using all"}
+            return np.zeros(n), {"status": f"milp failed ({res.message}); no trades",
+                                 "max_coverage": best_cov}
         return x, {"status": res.message, "milp_scenarios": sum(S.shape[1] for S in subs)}
     if method == "calibrated":
         return _calibrate(Lms, K, alpha, c, ub, x_all)
@@ -249,10 +272,10 @@ def _calibrate(Lms, K, alpha, c, ub, x_all, tol=0.003, max_steps=8):
             else:
                 lo_f, x_f, cov_f = mid, x_mid, cov_mid
         if x_f is None:
-            return x_all, {"status": "CVaR infeasible at every level; using all"}
+            return np.zeros_like(x_all), {"status": "CVaR infeasible at every level; no trades"}
         hi, x_hi, cov_hi = lo_f, x_f, cov_f
-    if cov_hi < alpha:  # even the tightest feasible CVaR plan misses; fall back to all
-        return x_all, {"status": "calibration failed; using all", "solves": solves}
+    if cov_hi < alpha:  # even the tightest feasible CVaR plan misses
+        return np.zeros_like(x_all), {"status": "calibration failed; no trades", "solves": solves}
     best = (x_hi, hi, cov_hi)
     lo, x_lo, cov_lo = 0.0, *f(0.0)
     if x_lo is None:
@@ -287,9 +310,11 @@ class HarvestPlan:
     x: np.ndarray
     status: list[LotStatus]
     replacements: dict[str, Replacement]
-    target: float
-    losses: np.ndarray  # (N,) in-sample L_s(x)
-    gains: np.ndarray
+    target: float  # tax saving the executable plan aims for, in currency units
+    requested_target: float  # user goal, before any infeasibility adjustment
+    loss_target: float  # loss capacity required to reach target at the flat tax rate
+    losses: np.ndarray  # (N,) potential loss if all selected maximum fractions were sold
+    gains: np.ndarray  # realised gain base, not mark-to-market returns
     port_pnl: np.ndarray
     lot_losses: np.ndarray  # (n_lots, N) eligible
     tracking_error: float  # $ 1-sd over the 31-day replacement window
@@ -298,17 +323,111 @@ class HarvestPlan:
 
     @property
     def confidence(self) -> float:
-        return float(np.mean(self.losses >= self.target * (1 - 1e-9)))
+        return float(np.mean(self.tax_savings >= self.target * (1 - 1e-9)))
+
+    @property
+    def realized_losses(self) -> np.ndarray:
+        """Execution stops at the loss needed for the tax-savings goal."""
+        return np.minimum(self.losses, self.loss_target)
+
+    @property
+    def tax_savings(self) -> np.ndarray:
+        return self.problem.tax_rate * np.minimum(self.realized_losses,
+                                                  np.maximum(self.gains, 0.0))
 
     @property
     def expected_loss(self) -> float:
-        return float(self.losses.mean())
+        return float(self.realized_losses.mean())
+
+    @property
+    def expected_unused_capacity(self) -> float:
+        return float(np.maximum(self.losses - self.realized_losses, 0.0).mean())
+
+    @property
+    def expected_market_sold(self) -> float:
+        executed = self.executed_lot_losses()
+        fractions = np.divide(executed, self.lot_losses,
+                              out=np.zeros_like(executed), where=self.lot_losses > 0)
+        values = np.array([lot.value for lot in self.problem.portfolio.lots])
+        return float((values[:, None] * fractions).sum(0).mean())
 
     @property
     def expected_tax_saved(self) -> float:
         """This year's saving: tax(G) - tax(G - L); losses beyond G carry forward, not counted."""
-        G, t = self.gains, self.problem.tax_rate
-        return float(np.mean(t * (np.clip(G, 0, None) - np.clip(G - self.losses, 0, None))))
+        return float(self.tax_savings.mean())
+
+    def executed_lot_losses(self) -> np.ndarray:
+        """Scenario-wise sale allocation: cheapest replacement-adjusted loss first."""
+        n, samples = self.lot_losses.shape
+        if self.loss_target <= 0 or not np.any(self.x):
+            return np.zeros((n, samples))
+        cost = np.array([
+            lot.value * (1 + self.problem.tracking_penalty *
+                         (1 - self.replacements[lot.ticker].corr
+                          if lot.ticker in self.replacements else 1))
+            for lot in self.problem.portfolio.lots
+        ])
+        ratio = np.divide(cost[:, None], self.lot_losses,
+                          out=np.full_like(self.lot_losses, np.inf),
+                          where=self.lot_losses > 0)
+        order = np.argsort(ratio, axis=0)
+        capacity = self.x[:, None] * self.lot_losses
+        ordered = np.take_along_axis(capacity, order, axis=0)
+        remaining = np.maximum(self.loss_target - (np.cumsum(ordered, axis=0) - ordered), 0)
+        executed = np.minimum(ordered, remaining)
+        out = np.zeros_like(capacity)
+        np.put_along_axis(out, order, executed, axis=0)
+        return out
+
+    def execute(self, prices: dict[str, float]) -> pd.DataFrame:
+        """Size actual sales at the harvest date, stopping at the tax goal.
+
+        Prices must cover every selected ticker. Fractional shares are kept to six decimal
+        places, rounded down so execution cannot exceed the desired loss amount.
+        """
+        columns = ("lot", "ticker", "account", "acquired", "sell_shares", "sell_price",
+                   "realized_loss", "tax_saved", "replace_with", "buy_back_from")
+        candidates = []
+        for i, (xi, lot) in enumerate(zip(self.x, self.problem.portfolio.lots)):
+            if xi <= 0:
+                continue
+            if lot.ticker not in prices:
+                raise ValueError(f"missing harvest-date price for {lot.ticker}")
+            price = float(prices[lot.ticker])
+            if price <= 0:
+                raise ValueError(f"invalid harvest-date price for {lot.ticker}")
+            loss_per_share = max(lot.cost_basis - price, 0.0)
+            if loss_per_share <= 0:
+                continue
+            rep = self.replacements.get(lot.ticker)
+            tracking = 1 - rep.corr if rep else 1.0
+            cost = lot.value * (1 + self.problem.tracking_penalty * tracking)
+            candidates.append((cost / (lot.shares * loss_per_share), i, lot, price,
+                               loss_per_share, rep, xi))
+        rows = []
+        remaining = self.loss_target
+        for _, i, lot, price, loss_per_share, rep, xi in sorted(candidates):
+            if remaining <= 0:
+                break
+            shares = min(xi * lot.shares, remaining / loss_per_share)
+            shares = math.floor(shares * 1e6) / 1e6
+            if shares <= 0:
+                continue
+            loss = shares * loss_per_share
+            remaining -= loss
+            rows.append({
+                "lot": i, "ticker": lot.ticker, "account": lot.account,
+                "acquired": lot.acquired, "sell_shares": shares, "sell_price": price,
+                "realized_loss": loss, "tax_saved": self.problem.tax_rate * loss,
+                "replace_with": rep.buy if rep else "",
+                "buy_back_from": rep.buy_back_from if rep else None,
+            })
+        orders = pd.DataFrame(rows, columns=columns)
+        saved = float(orders.tax_saved.sum())
+        orders.attrs.update({"tax_savings_goal": self.target, "tax_saved": saved,
+                             "shortfall": max(self.target - saved, 0.0),
+                             "goal_met": saved >= self.target - 0.01})
+        return orders
 
     @property
     def subportfolio_value(self) -> float:
@@ -316,6 +435,9 @@ class HarvestPlan:
 
     def trades(self) -> pd.DataFrame:
         p = self.problem.portfolio
+        executed = self.executed_lot_losses()
+        executed_frac = np.divide(executed, self.lot_losses,
+                                  out=np.zeros_like(executed), where=self.lot_losses > 0)
         rows = []
         for i, lot in enumerate(p.lots):
             st = self.status[i]
@@ -328,9 +450,11 @@ class HarvestPlan:
                 "value": lot.value,
                 "unrealized": lot.unrealized,
                 "eligible": st.eligible,
-                "sell_frac": round(float(self.x[i]), 4),
-                "sell_shares": math.floor(self.x[i] * lot.shares * 1e4) / 1e4,
-                "E[loss]": float(self.x[i] * self.lot_losses[i].mean()),
+                "max_sell_frac": round(float(self.x[i]), 6),
+                "max_sell_shares": math.floor(self.x[i] * lot.shares * 1e6) / 1e6,
+                "E[loss]": float(executed[i].mean()),
+                "E[loss capacity]": float(self.x[i] * self.lot_losses[i].mean()),
+                "E[sell shares]": float(lot.shares * executed_frac[i].mean()),
                 "P(in loss)": float(np.mean(self.lot_losses[i] > 0)) if st.eligible else np.nan,
                 "replace_with": rep.buy if (rep and self.x[i] > 1e-6) else "",
                 "corr": rep.corr if (rep and self.x[i] > 1e-6) else np.nan,
@@ -340,18 +464,23 @@ class HarvestPlan:
         return pd.DataFrame(rows)
 
     def summary(self) -> dict:
-        q = np.quantile(self.losses, [0.05, 0.5, 0.95])
+        q = np.quantile(self.realized_losses, [0.05, 0.5, 0.95])
         return {
             "jurisdiction": self.problem.rules.code,
             "harvest_on": self.problem.harvest_on,
             "tax_rate": self.problem.tax_rate,
-            "target_mode": self.problem.target_mode,
-            "E[gain base]": float(self.gains.mean()),
-            "target K": self.target,
+            "realized gain base": float(self.gains.mean()),
+            "requested tax saving goal": self.requested_target,
+            "tax saving goal": self.target,
+            "max reliable tax saving": self.info.get("max_reliable_tax_saving"),
+            "loss needed for goal": self.loss_target,
             "confidence (target)": self.problem.confidence,
-            "P(L >= K) in-sample": self.confidence,
-            "E[L]": self.expected_loss,
-            "L 5/50/95%": tuple(float(v) for v in q),
+            "P(tax saved >= goal) in-sample": self.confidence,
+            "E[loss capacity]": float(self.losses.mean()),
+            "E[loss realized]": self.expected_loss,
+            "E[unused loss capacity]": self.expected_unused_capacity,
+            "E[market sold at current prices]": self.expected_market_sold,
+            "realized loss 5/50/95%": tuple(float(v) for v in q),
             "E[tax saved]": self.expected_tax_saved,
             "sub-portfolio value": self.subportfolio_value,
             "sub-portfolio share of P": self.subportfolio_value / self.problem.portfolio.value,
@@ -380,11 +509,14 @@ def _tracking_error(problem, x, replacements):
 
 def optimise(problem: HarvestProblem, method: str = "calibrated") -> HarvestPlan:
     t0 = time.perf_counter()
+    if problem.tax_rate < 0 or not 0 < problem.confidence < 1:
+        raise ValueError("tax_rate must be nonnegative and confidence must be between 0 and 1")
     p, uni = problem.portfolio, problem.universe
     status = screen(p, uni, problem.harvest_on, problem.rules)
     eligible = np.array([s.eligible for s in status])
     sc = simulate(problem, eligible=eligible)
-    K = target_from(problem, sc)
+    requested_target = target_from(problem)
+    tax_bill = problem.tax_rate * max(problem.realized_gains, 0.0)
 
     # linear cost: $ sold (normalised) + tracking penalty from the best replacement's corr
     cov_lookup = lambda ts: uni.factor_model(ts).cov
@@ -402,12 +534,32 @@ def optimise(problem: HarvestProblem, method: str = "calibrated") -> HarvestPlan
     for k, m in enumerate(problem.ambiguity.values()):
         Lms.append(simulate(problem, rng=np.random.default_rng(problem.seed + 100 + k), model=m,
                             eligible=eligible).losses)
-    x, info = solve_x(Lms, K, problem.confidence, c, ub, method,
-                      rng=np.random.default_rng(problem.seed + 1))
+    reliable_loss = min(float(np.quantile(ub @ L, 1 - problem.confidence,
+                                           method="lower")) for L in Lms)
+    max_reliable_goal = min(tax_bill, problem.tax_rate * reliable_loss)
+    reduced = requested_target > max_reliable_goal + 1e-9
+    target = min(requested_target, 0.98 * max_reliable_goal) if reduced else requested_target
+    K = target / problem.tax_rate if problem.tax_rate > 0 else 0.0
+    if target <= 0:
+        x = np.zeros(len(p.lots))
+        info = {"status": "no attainable tax-saving goal; no trades"}
+    else:
+        x, info = solve_x(Lms, K, problem.confidence, c, ub, method,
+                          rng=np.random.default_rng(problem.seed + 1))
+        if not np.any(x) and coverage(Lms, ub, K) >= problem.confidence:
+            x = _prune_feasible_pool(Lms, K, problem.confidence, c, ub)
+            info["status"] = ("solver could not size the pool; using a feasible, "
+                              "greedily reduced candidate pool with sales capped at the goal")
+    if reduced:
+        info["status"] = (f"requested tax-saving goal {requested_target:,.2f} is infeasible "
+                          f"at {problem.confidence:.0%} confidence; {info['status']}; "
+                          f"planning for {target:,.2f} instead")
+    info["max_reliable_tax_saving"] = max_reliable_goal
     if problem.ambiguity:
-        info["worst-case P(L>=K) over ambiguity set"] = coverage(Lms, x, K)
+        info["worst-case P(tax saved >= goal) over ambiguity set"] = (
+            coverage(Lms, x, K) if K > 0 else 1.0)
     x = np.where(x > 1e-7, np.minimum(x, 1.0), 0.0)
-    if problem.tax_rate == 0 and problem.target_override is None:
+    if problem.tax_rate == 0 and problem.tax_savings_goal is None:
         info["status"] = (f"nothing to harvest: gains are untaxed under {problem.rules.name} "
                           f"rules, so a loss saves nothing")
 
@@ -416,7 +568,8 @@ def optimise(problem: HarvestProblem, method: str = "calibrated") -> HarvestPlan
     reps = pick_replacements(sold, uni, cov_lookup, problem.harvest_on, problem.rules,
                              harvested_groups)
     plan = HarvestPlan(
-        problem=problem, x=x, status=status, replacements=reps, target=K,
+        problem=problem, x=x, status=status, replacements=reps,
+        target=target, requested_target=requested_target, loss_target=K,
         losses=x @ sc.losses, gains=sc.gains, port_pnl=sc.port_pnl, lot_losses=sc.losses,
         tracking_error=_tracking_error(problem, x, reps), info=info,
     )
@@ -429,5 +582,8 @@ def evaluate(plan: HarvestPlan, n: int, rng, model: ReturnModel | None = None) -
     eligible = np.array([s.eligible for s in plan.status])
     sc = simulate(plan.problem, n=n, rng=rng, model=model, eligible=eligible)
     L = plan.x @ sc.losses
-    return {"confidence": float(np.mean(L >= plan.target * (1 - 1e-9))),
-            "E[L]": float(L.mean()), "losses": L}
+    realized = np.minimum(L, plan.loss_target)
+    saved = plan.problem.tax_rate * np.minimum(realized, np.maximum(sc.gains, 0.0))
+    return {"confidence": float(np.mean(saved >= plan.target * (1 - 1e-9))),
+            "E[loss realized]": float(realized.mean()), "E[tax saved]": float(saved.mean()),
+            "losses": L, "realized_losses": realized, "tax_savings": saved}
