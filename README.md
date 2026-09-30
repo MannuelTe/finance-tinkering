@@ -10,7 +10,7 @@ Pet projects around fintech, trading and quantitative research. Each folder is s
 | [`harness/`](harness) | Support tools and artefacts. |
 | [`wasserstein-hmm-replication/`](wasserstein-hmm-replication) | Replication of *Explainable Regime Aware Investing* (Wasserstein HMM / k-NN regimes), plus an overfitting test whose blocked-validation fix gave a modest but statistically robust improvement. |
 | [`market-surveillance/`](market-surveillance) | Pre-announcement insider-dealing screen (event study) and a MiFIR RTS 22 transaction-report validator with ARM reconciliation; Bloomberg pull spec included. |
-| [`TaxHarvest/`](TaxHarvest) | Plans conditional tax-lot sales around a dollar tax-saving goal. It selects enough eligible loss capacity for a chosen confidence, caps actual sales at the goal, and screens US wash sales and Canadian superficial losses. Includes a Swiss control case, worked examples, stress tests, and animations. |
+| [`TaxHarvest/`](TaxHarvest) | Plans conditional tax-lot sales around a dollar tax-saving goal. It selects enough eligible loss capacity for a chosen confidence, caps actual sales at the goal, and screens US wash sales and Canadian superficial losses. A weekly review re-checks the odds with fresh prices and says when to lock losses in. Includes a Swiss control case, worked examples, stress tests, and animations. |
 | [`beta-scanner/`](beta-scanner) | Beta of a stock vs SPY / RSP (equal-weight) and an S&P 500 mid-cap scanner for names where the two betas diverge; early notebooks. |
 | [`notes/`](notes) | Research notes (e.g. how to gauge the impact of the regime-investing paper). |
 | [`archive/`](archive) | Old standalone SPY overnight research script (read-only IBKR, no order submission). |

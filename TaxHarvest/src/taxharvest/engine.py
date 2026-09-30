@@ -57,9 +57,12 @@ class HarvestProblem:
     # extra models the plan must also satisfy (distributionally robust); name -> model
     ambiguity: dict[str, ReturnModel] = field(default_factory=dict)
     seed: int = 7
+    harvest_date: date | None = None  # exact sale date; default converts horizon_days
 
     @property
     def harvest_on(self) -> date:
+        if self.harvest_date is not None:
+            return self.harvest_date
         # trading -> calendar days (252 / 365)
         return self.portfolio.as_of + timedelta(days=round(self.horizon_days * 365 / 252))
 
@@ -303,6 +306,32 @@ def _calibrate(Lms, K, alpha, c, ub, x_all, tol=0.003, max_steps=8):
     return best[0], {"status": "optimal", "cvar_level": best[1], "solves": solves}
 
 
+# ----------------------------------------------------------------------------- execution
+def sale_costs(lots, replacements: dict[str, Replacement], tracking_penalty: float) -> np.ndarray:
+    """Market value sold, inflated by how poorly the replacement tracks the original."""
+    return np.array([
+        lot.value * (1 + tracking_penalty * (1 - replacements[lot.ticker].corr
+                                             if lot.ticker in replacements else 1))
+        for lot in lots
+    ])
+
+
+def allocate_losses(capacity: np.ndarray, cost: np.ndarray, target) -> np.ndarray:
+    """Fill ``target`` loss per scenario column, cheapest cost per dollar of loss first.
+
+    ``capacity`` is (n_lots, N) loss available per lot; ``target`` is a scalar or (N,).
+    """
+    lot_loss = capacity if capacity.ndim == 2 else capacity[:, None]
+    ratio = np.divide(np.broadcast_to(cost[:, None], lot_loss.shape), lot_loss,
+                      out=np.full(lot_loss.shape, np.inf), where=lot_loss > 0)
+    order = np.argsort(ratio, axis=0)
+    ordered = np.take_along_axis(lot_loss, order, axis=0)
+    remaining = np.maximum(np.asarray(target) - (np.cumsum(ordered, axis=0) - ordered), 0)
+    out = np.zeros_like(lot_loss)
+    np.put_along_axis(out, order, np.minimum(ordered, remaining), axis=0)
+    return out
+
+
 # ----------------------------------------------------------------------------- result
 @dataclass
 class HarvestPlan:
@@ -358,26 +387,11 @@ class HarvestPlan:
 
     def executed_lot_losses(self) -> np.ndarray:
         """Scenario-wise sale allocation: cheapest replacement-adjusted loss first."""
-        n, samples = self.lot_losses.shape
         if self.loss_target <= 0 or not np.any(self.x):
-            return np.zeros((n, samples))
-        cost = np.array([
-            lot.value * (1 + self.problem.tracking_penalty *
-                         (1 - self.replacements[lot.ticker].corr
-                          if lot.ticker in self.replacements else 1))
-            for lot in self.problem.portfolio.lots
-        ])
-        ratio = np.divide(cost[:, None], self.lot_losses,
-                          out=np.full_like(self.lot_losses, np.inf),
-                          where=self.lot_losses > 0)
-        order = np.argsort(ratio, axis=0)
-        capacity = self.x[:, None] * self.lot_losses
-        ordered = np.take_along_axis(capacity, order, axis=0)
-        remaining = np.maximum(self.loss_target - (np.cumsum(ordered, axis=0) - ordered), 0)
-        executed = np.minimum(ordered, remaining)
-        out = np.zeros_like(capacity)
-        np.put_along_axis(out, order, executed, axis=0)
-        return out
+            return np.zeros_like(self.lot_losses)
+        cost = sale_costs(self.problem.portfolio.lots, self.replacements,
+                          self.problem.tracking_penalty)
+        return allocate_losses(self.x[:, None] * self.lot_losses, cost, self.loss_target)
 
     def execute(self, prices: dict[str, float]) -> pd.DataFrame:
         """Size actual sales at the harvest date, stopping at the tax goal.
@@ -400,8 +414,7 @@ class HarvestPlan:
             if loss_per_share <= 0:
                 continue
             rep = self.replacements.get(lot.ticker)
-            tracking = 1 - rep.corr if rep else 1.0
-            cost = lot.value * (1 + self.problem.tracking_penalty * tracking)
+            cost = sale_costs([lot], self.replacements, self.problem.tracking_penalty)[0]
             candidates.append((cost / (lot.shares * loss_per_share), i, lot, price,
                                loss_per_share, rep, xi))
         rows = []

@@ -506,3 +506,73 @@ def nominal_vs_robust(nom: HarvestPlan, rob: HarvestPlan, mis_nom: dict, mis_rob
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
+
+
+def backtest(bt: dict, path: Path, cur="$", title: str = ""):
+    """Rules on the same price paths: how often each meets the goal, how much it sells, and
+    how many paths sell before the deadline."""
+    style()
+    days = bt["_meta"]["days"]
+    order = ["one-shot", "daily", "weekly", "sell now"]
+
+    def family(name):
+        return next((f for f in order if name.startswith(f)), "sell now")
+
+    rules = sorted(((k, v) for k, v in bt.items() if not k.startswith("_")),
+                   key=lambda kv: (order.index(family(kv[0])), kv[0]))
+    color = {"one-shot": ORANGE, "daily": BLUE, "weekly": AQUA, "sell now": MUTED}
+
+    def label(name, r):
+        every = r.get("every", 1)
+        n = len(range(0, days, every)) + 1 if family(name) in ("daily", "weekly") else 1
+        return f"{name}  ({n} review{'s' if n > 1 else ''})"
+
+    y = np.arange(len(rules))[::-1]
+    fig, (a, b, c) = plt.subplots(1, 3, figsize=(14, 0.42 * len(rules) + 2.4),
+                                  gridspec_kw={"width_ratios": [1, 1, 1.25]})
+    met = np.array([r["P(goal met)"] for _, r in rules])
+    cols = [color[family(k)] for k, _ in rules]
+    lo = min(met.min() - 0.02, 0.86)
+    a.hlines(y, lo, met, color=GRID, lw=2, zorder=1)
+    a.scatter(met, y, s=64, color=cols, edgecolor=SURFACE, linewidth=2, zorder=3)
+    for yi, m in zip(y, met):
+        a.text(m - 0.004, yi + 0.28, f"{m:.1%}", ha="right", fontsize=7.5, color=INK2)
+    a.set_yticks(y, [label(k, r) for k, r in rules], fontsize=8.5)
+    a.set_xlim(lo, 1.005)
+    a.xaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+    a.set_xlabel("share of paths that meet the goal")
+    a.set_title("Goal met")
+    a.grid(axis="y", visible=False)
+
+    sold = [r["E[market value sold]"] for _, r in rules]
+    b.barh(y, sold, color=cols, height=0.62)
+    for yi, v in zip(y, sold):
+        b.text(v, yi, f" {cur}{v / 1000:,.1f}k", va="center", fontsize=7.5, color=INK2)
+    b.set_yticks(y, [])
+    b.set_xlim(0, max(sold) * 1.18)
+    b.xaxis.set_major_formatter(money(cur))
+    b.set_xlabel("average market value sold and replaced")
+    b.set_title("Turnover")
+    b.grid(axis="y", visible=False)
+
+    t = np.arange(days)
+    for name, r in rules:
+        f = family(name)
+        if f not in ("daily", "weekly"):
+            continue
+        d = r["first_sale_day"]
+        share = [np.mean((d >= 0) & (d <= k)) for k in t]
+        c.step(t, share, where="post", color=color[f], lw=2,
+               ls="-" if name.endswith("95%") else "--", label=name)
+    c.set_xlim(0, days - 1)
+    c.set_ylim(0, None)
+    c.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+    c.set_xlabel("trading days from today")
+    c.set_ylabel("share of paths that have sold")
+    c.set_title(f"Early sales (the rest sell on day {days})")
+    c.legend(loc="upper left")
+    if title:
+        fig.suptitle(title, x=0.01, ha="left", fontsize=13, fontweight="bold")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)

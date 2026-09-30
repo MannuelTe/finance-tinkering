@@ -4,11 +4,16 @@
     taxharvest run book.csv --jurisdiction CA --realized-gains 20000 \
         --tax-savings-goal 1500 --confidence 0.9 --horizon-days 40
     taxharvest interactive
+    taxharvest daily book.csv --realized-gains 18000 --harvested-loss 0 \
+        --tax-savings-goal 1200 --confidence 0.95 --every 5
+    taxharvest backtest book.csv --realized-gains 18000 --tax-savings-goal 1200 \
+        --confidences 0.9 0.95 --every 1 5
 """
 
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import sys
 from datetime import date
 from pathlib import Path
@@ -111,7 +116,7 @@ def cmd_examples(args):
         print(f"-> {out}")
 
 
-def cmd_run(args):
+def _load(args) -> HarvestProblem:
     as_of = date.fromisoformat(args.as_of) if args.as_of else date.today()  # noqa: DTZ011
     df = pd.read_csv(args.portfolio)
     df.columns = [c.lower() for c in df.columns]
@@ -119,10 +124,68 @@ def cmd_run(args):
     extra = df.drop_duplicates("ticker").set_index("ticker")
     planned = pd.read_csv(args.planned) if args.planned else None
     portfolio = Portfolio.from_frame(df, as_of, planned)
-    problem = _build(args, portfolio, Universe.default(), extra)
+    return _build(args, portfolio, Universe.default(), extra)
+
+
+def cmd_run(args):
+    problem = _load(args)
     report.run(problem, Path(args.out), f"{Path(args.portfolio).stem}", method=args.method,
                robust=not args.no_robust, quick=args.quick, animate=not args.no_anim)
     print(f"-> {args.out}")
+
+
+def cmd_daily(args):
+    from . import daily
+
+    problem = _load(args)
+    deadline = date.fromisoformat(args.deadline) if args.deadline else None
+    rev = daily.review(
+        problem.portfolio, problem.universe, problem.model, problem.rules,
+        realized_gains=args.realized_gains, harvested_loss=args.harvested_loss,
+        tax_savings_goal=args.tax_savings_goal, tax_rate=problem.tax_rate, deadline=deadline,
+        confidence=args.confidence, every=args.every, n_scenarios=args.scenarios,
+        size_pool=not args.no_pool)
+    print(daily.describe(rev, problem.rules.symbol))
+    out = Path(args.out)
+    daily.append_log(out / "review_log.csv", rev)
+    if len(rev.orders):
+        path = out / f"orders_{rev.as_of}.csv"
+        rev.orders.to_csv(path, index=False)
+        print(f"  orders -> {path}\n  after selling: update the portfolio CSV, add the loss to "
+              f"--harvested-loss, and add the replacement lots")
+    print(f"  log -> {out / 'review_log.csv'}")
+
+
+def cmd_backtest(args):
+    from . import daily, plots
+    from .engine import optimise
+
+    problem = _load(args)
+    rules, pools = {"sell now": 1.01}, {}
+    for c in args.confidences:
+        for every in args.every:
+            name = {1: "daily", 5: "weekly"}.get(every, f"every {every}d")
+            rules[f"{name} {c:.0%}"] = (c, every)
+        print(f"one-shot plan at {c:.0%}")
+        pools[f"one-shot {c:.0%}"] = optimise(dataclasses.replace(problem, confidence=c)).x
+    print(f"simulating {args.paths:,} price paths over {problem.horizon_days} trading days")
+    bt = daily.backtest(problem, rules, n_paths=args.paths, n_inner=args.inner)
+    for name, x in pools.items():
+        one = daily.backtest(problem, {name: -1}, n_paths=args.paths, n_inner=args.inner, pool=x)
+        bt[name] = one[name]
+    meta = bt.pop("_meta")
+    cols = ["P(goal met)", "E[tax saved]", "E[market value sold]", "E[sale days]",
+            "P(sold before deadline)"]
+    table = pd.DataFrame({k: {c: v[c] for c in cols} for k, v in bt.items()}).T
+    table.insert(0, "reviews", [1 if not isinstance(rules.get(k), tuple) else
+                                len(range(0, meta["days"], rules[k][1])) + 1 for k in table.index])
+    print(f"\nloss needed {problem.rules.symbol}{meta['loss_goal']:,.0f}\n"
+          + table.to_string(float_format=lambda v: f"{v:,.3f}" if v < 2 else f"{v:,.0f}"))
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    table.to_csv(out / "backtest.csv")
+    plots.backtest({**bt, "_meta": meta}, out / "backtest.png", problem.rules.symbol, args.title)
+    print(f"-> {out / 'backtest.png'}")
 
 
 def cmd_interactive(args):
@@ -186,21 +249,49 @@ def main(argv=None):
     common(e, "figures")
     e.set_defaults(fn=cmd_examples)
 
+    def book(p, confidence=0.9):
+        p.add_argument("portfolio", help="CSV: account,ticker,shares,cost_basis,acquired,price"
+                                         "[,drip] (+ optional factor,beta,idio_vol,wash_group,"
+                                         "sector)")
+        p.add_argument("--planned", help="CSV of planned buys: ticker,on,account")
+        p.add_argument("--as-of")
+        p.add_argument("--jurisdiction", default="US",
+                       choices=["US", "CA", "CH", "us", "ca", "ch"])
+        p.add_argument("--tax-rate", type=float)
+        p.add_argument("--confidence", type=float, default=confidence)
+        p.add_argument("--horizon-days", type=int, default=40)
+        p.add_argument("--realized-gains", type=float, default=0.0,
+                       help="taxable gains actually realized or explicitly planned this year")
+        p.add_argument("--tax-savings-goal", type=float,
+                       help="dollars of tax to save; defaults to the full modeled tax bill")
+
     r = sub.add_parser("run", help="optimise a portfolio CSV")
-    r.add_argument("portfolio", help="CSV: account,ticker,shares,cost_basis,acquired,price[,drip]"
-                                     " (+ optional factor,beta,idio_vol,wash_group,sector)")
-    r.add_argument("--planned", help="CSV of planned buys: ticker,on,account")
-    r.add_argument("--as-of")
-    r.add_argument("--jurisdiction", default="US", choices=["US", "CA", "CH", "us", "ca", "ch"])
-    r.add_argument("--tax-rate", type=float)
-    r.add_argument("--confidence", type=float, default=0.9)
-    r.add_argument("--horizon-days", type=int, default=40)
-    r.add_argument("--realized-gains", type=float, default=0.0,
-                   help="taxable gains actually realized or explicitly planned this year")
-    r.add_argument("--tax-savings-goal", type=float,
-                   help="dollars of tax to save; defaults to the full modeled tax bill")
+    book(r)
     common(r, "out")
     r.set_defaults(fn=cmd_run)
+
+    d = sub.add_parser("daily", help="today's review: hold, or sell to lock losses in")
+    book(d, confidence=0.95)
+    d.add_argument("--harvested-loss", type=float, default=0.0,
+                   help="losses already realized this year")
+    d.add_argument("--deadline", help="last sale date (default: last weekday of the year)")
+    d.add_argument("--every", type=int, default=5,
+                   help="trading days between reviews (5 = weekly)")
+    d.add_argument("--no-pool", action="store_true", help="skip sizing the lots to keep free")
+    common(d, "out")
+    d.set_defaults(fn=cmd_daily)
+
+    b = sub.add_parser("backtest", help="compare review rules on simulated price paths")
+    book(b)
+    b.add_argument("--confidences", type=float, nargs="+", default=[0.9, 0.95])
+    b.add_argument("--every", type=int, nargs="+", default=[1, 5],
+                   help="review intervals in trading days")
+    b.add_argument("--paths", type=int, default=2000)
+    b.add_argument("--inner", type=int, default=1000,
+                   help="scenarios per review for the wait confidence")
+    b.add_argument("--title", default="")
+    common(b, "out")
+    b.set_defaults(fn=cmd_backtest)
 
     i = sub.add_parser("interactive", help="type your portfolio in")
     common(i, "out")

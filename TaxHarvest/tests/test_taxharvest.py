@@ -202,3 +202,51 @@ def test_regime_model_learns_persistence_and_picks_k_by_bic():
     model, _ = fit_regime_model(pd.DataFrame(X, columns=["A", "B"]), k_max=3, seed=1)
     assert len(model.weights) == 2
     assert np.diag(model.transition).min() > 0.8
+
+
+# ----------------------------------------------------------------------------- daily
+def test_allocate_losses_fills_cheapest_first_and_stops_at_target():
+    from taxharvest.engine import allocate_losses
+    capacity = np.array([100.0, 300.0, 200.0])
+    cost = np.array([500.0, 600.0, 100.0])  # per $ of loss: 5, 2, 0.5
+    out = allocate_losses(capacity, cost, 350.0)[:, 0]
+    assert out == pytest.approx([0.0, 150.0, 200.0])
+
+
+def test_daily_review_done_hold_and_deadline_sale():
+    from taxharvest import daily
+    book = """
+        VEA 200 60 2025-01-02 50 taxable
+        XOM 100 120 2025-01-02 100 taxable
+    """
+    pr = _problem(book)
+    args = (pr.portfolio, pr.universe, pr.model, US)
+    kw = {"realized_gains": 10_000, "tax_savings_goal": 0.238 * 1500, "n_scenarios": 2000,
+          "size_pool": False}
+    done = daily.review(*args, harvested_loss=1500, deadline=date(2026, 12, 31), **kw)
+    assert done.action == "done" and done.progress == pytest.approx(1.0)
+    hold = daily.review(*args, deadline=date(2026, 10, 8), **kw)
+    assert hold.action == "hold" and hold.wait_confidence >= 0.9
+    assert hold.cover == pytest.approx(4000 / 1500)
+    last = daily.review(*args, deadline=AS_OF, **kw)
+    assert last.action == "sell" and last.days_left == 0
+    assert last.orders.realized_loss.sum() == pytest.approx(1500, abs=0.01)
+    assert last.orders.ticker.iloc[0] == "VEA"  # replacement tracks it better than XOM's
+
+
+def test_daily_trigger_beats_one_shot_plan_in_backtest():
+    from taxharvest import daily
+    pr = _problem("""
+        VEA 200 60 2025-01-02 50 taxable
+        XOM 100 120 2025-01-02 100 taxable
+        NKE 100 90 2025-01-02 80 taxable
+    """, realized_gains=20_000, tax_savings_goal=0.238 * 3500, horizon_days=20)
+    plan = optimise(pr)
+    one = daily.backtest(pr, {"one-shot": -1}, n_paths=300, n_inner=400, pool=plan.x)
+    rules = daily.backtest(pr, {"now": 1.01, "daily": 0.9, "weekly": (0.9, 5)},
+                           n_paths=300, n_inner=400)
+    assert rules["now"]["P(goal met)"] == 1.0  # $6k of loss available today
+    assert rules["daily"]["P(goal met)"] > one["one-shot"]["P(goal met)"]
+    assert rules["weekly"]["P(goal met)"] > one["one-shot"]["P(goal met)"]
+    days = rules["weekly"]["first_sale_day"]
+    assert np.all((days % 5 == 0) | (days == 20))  # sales only on review days or the deadline

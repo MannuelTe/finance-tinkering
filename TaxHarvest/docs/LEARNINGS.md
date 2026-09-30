@@ -50,5 +50,15 @@ The [results](RESULTS.md) give the updated stress tests and the cost of a more c
 
 More simulation scenarios reduce Monte Carlo noise. They do not remove uncertainty in the
 return assumptions. The Gaussian hidden Markov model is useful for learning persistent
-regimes, but its fitted distribution still needs stress tests. A planning policy that updates
-daily as prices, gains, and purchases change remains the main next step.
+regimes, but its fitted distribution still needs stress tests.
+
+## Reviewing beats predicting
+
+A one-shot plan has to buy its confidence with a buffer of extra candidate lots, and it still
+misses as often as its confidence allows. Re-checking weekly with fresh prices and selling once
+waiting drops below the chosen confidence met the sample's goal in 99.9% of simulated paths,
+nearly as well as a daily check with a fifth of the reviews. The comparison also showed that in
+this model waiting has no payoff of its own: selling today meets the goal for certain with the
+least turnover. Waiting is worth something only for reasons the model leaves out, such as gains
+still to come or wanting to harvest beyond the goal. Stress-testing the review rules against
+other return models is the next step.

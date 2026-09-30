@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from taxharvest import report
+from taxharvest import cli, report
 from taxharvest.engine import HarvestProblem, optimise
 from taxharvest.model import Universe
 from taxharvest.portfolio import Portfolio
@@ -33,6 +33,13 @@ if __name__ == "__main__":
     report.run(problem(US, tax_savings_goal=1_200), ROOT / "figures/sample",
                "Sample portfolio, US taxpayer",
                quick=quick)
+    print("\n=== Same portfolio, daily and weekly review rules")
+    cli.main(["backtest", str(ROOT / "data/sample_portfolio.csv"),
+              "--planned", str(ROOT / "data/sample_portfolio_planned.csv"),
+              "--as-of", AS_OF.isoformat(), "--realized-gains", str(REALIZED_GAINS),
+              "--tax-savings-goal", "1200", "--out", str(ROOT / "figures/sample"),
+              "--title", "Sample portfolio: $1,200 goal, 40 trading days"]
+             + (["--paths", "500"] if quick else []))
     print("\n=== Same portfolio, full tax-bill goal")
     print(report.describe(optimise(problem(US))))
     print("\n=== Same portfolio, Swiss resident (amounts in USD)")
