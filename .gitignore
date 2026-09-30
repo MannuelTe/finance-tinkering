@@ -38,3 +38,6 @@ ibc/
 .DS_Store
 .idea/
 .vscode/
+
+# Personal interview explainer (local only)
+wasserstein-hmm-replication/explainer/
