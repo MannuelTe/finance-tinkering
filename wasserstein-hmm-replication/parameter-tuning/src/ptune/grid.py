@@ -130,3 +130,17 @@ def paper_tasks() -> list[dict]:
         tasks.append({"kind": "hmm", "window": w, "seed": rng.randint(1, 10_000),
                       "params": params, "tag": f"E4:{i}"})
     return tasks
+
+
+# ----------------------------------------------------------------- R4 (pre-registered rule)
+# Settings picked by the rules once the sweeps finished; each rerun under the paper data
+# mapping over 20 seeds. R4-R3: the draw with the best *tuning-window* Sharpe (joint:118).
+# R4-R2: the only E4 draw matching both turnover and drawdown (E4:53). R4-x66 is exploratory:
+# E4:66 is the draw nearest the paper on turnover *and* average allocation together.
+def r4_tasks() -> list[dict]:
+    joint = {t["tag"]: t["params"] for t in joint_tasks()}
+    e4 = {t["tag"]: t["params"] for t in paper_tasks() if t["tag"].startswith("E4:")}
+    picks = {"R4-R3": {**joint["joint:118"], **PAPER_DATA}, "R4-R2": e4["E4:53"],
+             "R4-x66": e4["E4:66"]}
+    return [{"kind": "hmm", "window": "paper_oos", "seed": s, "params": p, "tag": tag}
+            for tag, p in picks.items() for s in range(1, 21)]

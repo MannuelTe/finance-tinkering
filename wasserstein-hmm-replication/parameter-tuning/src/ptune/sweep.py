@@ -64,7 +64,7 @@ def main() -> None:
     from . import grid
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("which", choices=["oat", "knn", "joint", "paper", "check"])
+    parser.add_argument("which", choices=["oat", "knn", "joint", "paper", "r4", "check"])
     parser.add_argument("--workers", type=int, default=9)
     args = parser.parse_args()
     for var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS",
@@ -72,7 +72,7 @@ def main() -> None:
         os.environ[var] = "1"
     RUNS.mkdir(parents=True, exist_ok=True)
     tasks = {"oat": grid.oat_tasks, "knn": grid.knn_tasks, "joint": grid.joint_tasks,
-             "paper": grid.paper_tasks,
+             "paper": grid.paper_tasks, "r4": grid.r4_tasks,
              "check": lambda: [{"kind": "hmm", "window": "oos", "seed": 7, "params": {},
                                 "tag": "check"}]}[args.which]()
     todo = [t for t in tasks if not (RUNS / f"{grid.key(t)}.csv").exists()]

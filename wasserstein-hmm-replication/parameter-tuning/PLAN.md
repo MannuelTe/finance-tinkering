@@ -73,3 +73,12 @@ results, they are added as a pre-registered stage E. They do not replace stages 
 - **E-knn:** KNN under the paper data mapping, with 10 to 200 neighbours.
 - **R2b, new calibration target:** the paper's average HMM allocation (SPX 0.26, BOND 0.22,
   GOLD 0.22, OIL 0.00, USD 0.29). Report the draws closest to it in L1 distance, and their Sharpe.
+
+## Execution notes (2026-09-30, after the results)
+
+- **R4 picks, made mechanically by the rules:** R3 → joint draw 118. R2 → E4 draw 53, the only
+  draw in either sample that matches both turnover and drawdown (the replication-data sample had none).
+  Each was rerun over seeds 1 to 20 under the paper data mapping (`grid.r4_tasks`).
+- **Exploratory, not pre-registered:** R4-x66 (the E4 draw nearest the paper on turnover and
+  allocation together), R2 on turnover alone, and the static-twin timing test (`ptune.static`).
+  They are labelled as exploratory in `FINDINGS.md`.

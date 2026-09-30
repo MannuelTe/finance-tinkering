@@ -24,6 +24,8 @@ FIG = ROOT / "figures"
 PUBLISHED = {"sharpe": 2.18, "max_drawdown": -0.0543, "turnover": 0.0079}
 KNN_PUBLISHED = {"sharpe": 1.81, "max_drawdown": -0.1252, "turnover": 0.5665}
 MATCH = {"turnover": (0.0059, 0.0099), "max_drawdown": (-0.065, -0.043)}
+# R2b (amendment): the paper's average HMM allocation, in the paper data mapping's columns.
+PAPER_ALLOC = {"SPX": 0.26, "IEF": 0.22, "GLD": 0.22, "USO": 0.00, "UUP": 0.29}
 
 # Reference palette (light mode), as elsewhere in the repo.
 BLUE, ORANGE, AQUA = "#2a78d6", "#eb6834", "#1baf7a"
@@ -44,8 +46,8 @@ def style():
 
 def load_log() -> pd.DataFrame:
     rows = [json.loads(line) for line in (RES / "runs.jsonl").read_text().splitlines()]
-    df = pd.DataFrame(rows).drop_duplicates("key", keep="last")
-    t = pd.json_normalize(df["task"])
+    df = pd.DataFrame(rows).drop_duplicates("key", keep="last").reset_index(drop=True)
+    t = pd.json_normalize(df["task"].tolist())
     t.columns = [c.replace("params.", "p.") for c in t.columns]
     return pd.concat([df.drop(columns="task").reset_index(drop=True), t], axis=1)
 
@@ -136,6 +138,60 @@ def knn_table(log):
     return k[["parameter", "value", "sharpe", "max_drawdown", "turnover"]]
 
 
+def sharpe_se(sr_annual: float, n: int) -> float:
+    """Lo (2002) i.i.d. standard error of an annualised Sharpe estimated on n daily returns."""
+    d = sr_annual / np.sqrt(252)
+    return float(np.sqrt(252) * np.sqrt((1 + d ** 2 / 2) / n))
+
+
+def stage_e(log):
+    """Amendment 1: the paper data mapping (^GSPC, IEF; log outcomes; 680-day window)."""
+    e = log[log.window == "paper_oos"].copy()
+    if e.empty:
+        return {}, pd.DataFrame()
+    out = {}
+    for tag in ("E1", "E2", "E3"):
+        g = e[e.tag == tag]
+        if len(g):
+            out[tag] = {"n": len(g), **{f"{m}_{f}": float(getattr(g[m], f)())
+                                        for m in ("sharpe", "max_drawdown", "turnover")
+                                        for f in ("mean", "std", "min", "max")}}
+    knn = e[e.tag == "E-knn"]
+    out["E-knn"] = knn[["p.knn_neighbors", "sharpe", "max_drawdown", "turnover"]] \
+        .sort_values("p.knn_neighbors").to_dict("records")
+    d = e[e.tag.str.startswith("E4:")].copy()
+    if d.empty:
+        return out, d
+    d["draw"] = d.tag.str.split(":").str[1].astype(int)
+    d = d.set_index("draw").sort_index()
+    alloc = pd.DataFrame({i: daily(k).filter(like="w_").rename(columns=lambda c: c[2:]).mean()
+                          for i, k in d.key.items()}).T
+    d = d.join(alloc.add_prefix("avg_"))
+    d["alloc_l1"] = sum((d[f"avg_{a}"] - v).abs() for a, v in PAPER_ALLOC.items())
+    r1 = {m: dict(zip(["p5", "p50", "p95"], np.percentile(d[m], [5, 50, 95]).tolist()))
+          for m in ("sharpe", "max_drawdown", "turnover")}
+    r1.update(n=len(d), share_sharpe_ge_2_18=float((d.sharpe >= 2.18).mean()),
+              max_sharpe=float(d.sharpe.max()))
+    out["E4_R1"] = r1
+    m = d[d.turnover.between(*MATCH["turnover"]) & d.max_drawdown.between(*MATCH["max_drawdown"])]
+    out["E4_R2"] = {"n_match": len(m), "sharpe": m.sharpe.describe().to_dict()}
+    # Exploratory: turnover alone, since the drawdown convention is not identified.
+    mt = d[d.turnover.between(*MATCH["turnover"])]
+    out["E4_R2_turnover_only"] = {"n_match": len(mt), "sharpe": mt.sharpe.describe().to_dict()}
+    near = d.nsmallest(10, "alloc_l1")
+    out["E4_R2b"] = {"closest10_sharpe": near.sharpe.describe().to_dict(),
+                     "closest10": near[["alloc_l1", "sharpe", "turnover", "max_drawdown"]
+                                       + [f"avg_{a}" for a in PAPER_ALLOC]].reset_index()
+                     .to_dict("records"),
+                     "spearman_l1_vs_sharpe": float(spearmanr(d.alloc_l1, d.sharpe).statistic)}
+    best = d.sharpe.idxmax()
+    out["E4_best"] = {"draw": int(best), "sharpe": float(d.loc[best].sharpe),
+                      "deflated_sharpe_prob": deflated_sharpe(daily(d.loc[best].key)["gross"],
+                                                              d.sharpe.to_numpy()),
+                      "params": {c[2:]: d.loc[best][c] for c in d.columns if c.startswith("p.")}}
+    return out, d
+
+
 # ------------------------------------------------------------------ figures
 def fig_oat(tab, base_sd, out):
     style()
@@ -189,6 +245,31 @@ def fig_joint(both, out):
     plt.close(fig)
 
 
+def fig_e4(d, out):
+    style()
+    fig, (a, b) = plt.subplots(1, 2, figsize=(10, 3.8))
+    lo, hi = np.percentile(d.sharpe, [5, 95])
+    a.hist(d.sharpe, bins=25, color=BLUE, alpha=0.8, edgecolor="white")
+    a.axvspan(lo, hi, color=BLUE, alpha=0.08, lw=0)
+    for v, c, lab in ((PUBLISHED["sharpe"], ORANGE, "published HMM 2.18"),
+                      (1.588, MUTED, "equal weight 1.59")):
+        a.axvline(v, color=c, lw=1.5, ls="--", label=lab)
+    a.set_title(f"Paper data mapping, {len(d)} draws (90% range {lo:.2f} to {hi:.2f})")
+    a.set_xlabel("Test-window Sharpe (weighted log returns, no risk-free)")
+    a.legend(loc="upper left")
+    b.scatter(d.turnover, d.sharpe, s=14, color=BLUE, alpha=0.7, lw=0)
+    b.axvspan(*MATCH["turnover"], color=ORANGE, alpha=0.12, lw=0, label="paper turnover ±25%")
+    b.axhline(PUBLISHED["sharpe"], color=ORANGE, lw=1.5, ls="--")
+    b.set_xscale("log")
+    b.set_xlabel("Daily one-way turnover (log scale)")
+    b.set_ylabel("Sharpe")
+    b.set_title("Turnover against Sharpe")
+    b.legend(loc="lower right")
+    fig.tight_layout()
+    fig.savefig(out, dpi=150)
+    plt.close(fig)
+
+
 def main():
     FIG.mkdir(exist_ok=True)
     log = load_log()
@@ -224,15 +305,30 @@ def main():
         fig_joint(both, FIG / "joint.png")
         both.drop(columns=["key"]).to_csv(RES / "joint_draws.csv")
     out["knn"] = knn_table(log).to_dict("records")
+    r4 = log[log.tag.str.startswith("R4")]
+    out["R4"] = {tag: {"n": len(g), "sharpe_mean": float(g.sharpe.mean()),
+                       "sharpe_sd": float(g.sharpe.std()),
+                       "sharpe_p5_p50_p95": np.percentile(g.sharpe, [5, 50, 95]).tolist(),
+                       "share_ge_2_18": float((g.sharpe >= 2.18).mean()),
+                       "max_drawdown_mean": float(g.max_drawdown.mean()),
+                       "turnover_mean": float(g.turnover.mean())}
+                 for tag, g in r4.groupby("tag")}
+    e_out, e4 = stage_e(log)
+    out.update(e_out)
+    if len(e4):
+        e4.drop(columns=["key"]).to_csv(RES / "e4_draws.csv")
+        fig_e4(e4, FIG / "e4.png")
     (RES / "analysis.json").write_text(json.dumps(out, indent=1, default=str))
     pd.set_option("display.width", 200, "display.float_format", "{:.4f}".format)
     print(seeds.describe().loc[["mean", "std", "min", "max"]])
     print(tab.to_string(index=False))
-    for k in ("R1", "R3", "best_oos_draw"):
+    for k in ("R1", "R3", "best_oos_draw", "R4"):
         print(k, json.dumps(out.get(k), indent=1, default=str)[:1500])
     if "R2" in out:
         print("R2 matches:", out["R2"]["n_match"], out["R2"]["sharpe"])
     print(knn_table(log).to_string(index=False))
+    for k, v in e_out.items():
+        print(k, json.dumps(v, indent=1, default=str)[:2500])
 
 
 if __name__ == "__main__":
