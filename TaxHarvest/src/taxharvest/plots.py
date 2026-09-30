@@ -576,3 +576,143 @@ def backtest(bt: dict, path: Path, cur="$", title: str = ""):
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)
+
+
+def _story_path(weekly: dict, one_shot: dict, K: float, days: int) -> int:
+    """A path where the one-shot plan misses and the review sells mid-way: the clearest story."""
+    first = weekly["first_sale_day"]
+    got = one_shot["trace"]["harvested"][:, -1]
+    ok = np.flatnonzero((got < K - 1) & (first >= days // 4) & (first <= 3 * days // 4))
+    if not len(ok):
+        ok = np.flatnonzero(got < K - 1) if np.any(got < K - 1) else np.arange(len(got))
+    return int(ok[np.argmin(got[ok])])
+
+
+def animate_review_story(weekly: dict, one_shot: dict, K: float, days: int, path: Path,
+                         cur="$", trigger=0.95, every=5):
+    """One simulated path, day by day: the weekly review locks in, the one-shot plan misses."""
+    style()
+    i = _story_path(weekly, one_shot, K, days)
+    wt, ot = weekly["trace"], one_shot["trace"]
+    avail, locked = wt["available"][i], wt["harvested"][i]
+    shot, wait = ot["available"][i], wt["wait"][i]
+    sale = int(weekly["first_sale_day"][i])
+    got = ot["harvested"][i, -1]
+    t = np.arange(days + 1)
+    reviews = [d for d in t if d % every == 0 or d == days]
+    top = max(np.nanmax(avail), np.nanmax(shot), K) * 1.15
+    fig, (a, b) = plt.subplots(1, 2, figsize=(12, 4.4), gridspec_kw={"width_ratios": [1.6, 1]})
+    frames = list(t) + [days] * 14
+
+    def draw(k):
+        a.clear(), b.clear()
+        pre = t <= min(k, sale)
+        a.plot(t[pre], avail[pre], color=BLUE, lw=2, label="loss available to sell (all eligible lots)")
+        a.plot(t[:k + 1], shot[:k + 1], color=ORANGE, lw=2, label="loss in the one-shot plan's candidates")
+        a.step(t[:k + 1], locked[:k + 1], where="post", color=AQUA, lw=2.5,
+               label="loss locked in by the weekly review")
+        a.axhline(K, color=INK, lw=1, ls="--")
+        a.text(0.3, K, f" loss needed {cur}{K:,.0f}", va="bottom", fontsize=8, color=INK)
+        for d in reviews:
+            a.axvline(d, color=GRID, lw=0.8, zorder=0)
+        if k >= sale:
+            a.scatter([sale], [locked[sale]], s=70, color=AQUA, edgecolor=SURFACE, lw=2, zorder=4)
+            a.annotate(f"sold on day {sale}", (sale, locked[sale]), xytext=(6, 8),
+                       textcoords="offset points", fontsize=8, color=INK2)
+        if k == days:
+            a.scatter([days], [got], s=70, color=ORANGE, edgecolor=SURFACE, lw=2, zorder=4)
+            a.annotate(f"one-shot plan sells {cur}{got:,.0f}\nand misses the goal", (days, got),
+                       xytext=(-10, 22), textcoords="offset points", ha="right", fontsize=8,
+                       color=INK2)
+        a.set_xlim(0, days + 0.5)
+        a.set_ylim(0, top)
+        a.yaxis.set_major_formatter(money(cur))
+        a.set_xlabel("trading days from today (grey lines: weekly reviews)")
+        a.legend(loc="upper right", fontsize=8)
+
+        seen = [d for d in reviews if d <= k and not np.isnan(wait[d])]
+        b.axhline(trigger, color=INK, lw=1, ls="--")
+        b.text(days, trigger, f"sell below {trigger:.0%} ", va="top", ha="right", fontsize=8,
+               color=INK)
+        if seen:
+            v = wait[seen]
+            b.plot(seen, v, color=MUTED, lw=1, zorder=1)
+            b.scatter(seen, v, s=60, zorder=3, edgecolor=SURFACE, lw=2,
+                      color=[AQUA if x < trigger else BLUE for x in v])
+            for d, x in zip(seen, v):
+                b.annotate("sell" if x < trigger else "hold", (d, x), xytext=(0, 8),
+                           textcoords="offset points", ha="center", fontsize=7.5, color=INK2)
+        b.set_xlim(-2, days + 1)
+        b.set_ylim(min(0.5, np.nanmin(wait) - 0.05), 1.05)
+        b.yaxis.set_major_formatter(PercentFormatter(1, decimals=0))
+        b.set_xlabel("review day")
+        b.set_title("Chance that waiting to the deadline is enough")
+        if k < sale:
+            state = f"hold (P = {wait[max(seen)]:.0%})" if seen else "hold"
+        elif k < days:
+            state = f"sold on day {sale}, goal locked in"
+        else:
+            state = f"deadline: review met the goal, one-shot plan got {got / K:.0%} of it"
+        a.set_title(f"Day {k}: {state}")
+        fig.tight_layout()
+
+    FuncAnimation(fig, draw, frames=frames).save(path, writer=PillowWriter(fps=5), dpi=80)
+    plt.close(fig)
+
+
+def animate_review_paths(weekly: dict, one_shot: dict, K: float, days: int, path: Path,
+                         cur="$", trigger=0.95, n=60):
+    """Many paths at once: where the weekly review locks in, and what the one-shot plan misses."""
+    style()
+    wt = weekly["trace"]
+    avail = wt["available"][:n]
+    first = weekly["first_sale_day"][:n]
+    met = wt["harvested"][:n, -1] >= K - 0.01
+    shot_met = one_shot["trace"]["harvested"][:n, -1] >= K - 0.01
+    t = np.arange(days + 1)
+    top = np.nanquantile(avail, 0.99) * 1.1
+    fig, (a, b) = plt.subplots(1, 2, figsize=(12, 4.4), gridspec_kw={"width_ratios": [1.8, 1]})
+    frames = list(t) + [days] * 14
+
+    def draw(k):
+        a.clear(), b.clear()
+        for j in range(n):
+            stop = min(k, first[j]) if first[j] >= 0 else k
+            a.plot(t[:stop + 1], avail[j, :stop + 1], color=BLUE, lw=0.7, alpha=0.35)
+        done = (first >= 0) & (first <= k)
+        early = done & (first < days)
+        a.scatter(first[early], avail[early, first[early]], s=28, color=AQUA, edgecolor=SURFACE,
+                  lw=1, zorder=3, label="review sells early")
+        if k == days:
+            last = done & (first == days)
+            a.scatter(first[last], avail[last, days], s=28, color=BLUE, edgecolor=SURFACE,
+                      lw=1, zorder=3, label="sold on the deadline")
+        a.axhline(K, color=INK, lw=1, ls="--")
+        a.text(0.3, K, f" loss needed {cur}{K:,.0f}", va="bottom", fontsize=8, color=INK)
+        a.set_xlim(0, days + 0.5)
+        a.set_ylim(0, top)
+        a.yaxis.set_major_formatter(money(cur))
+        a.set_xlabel("trading days from today")
+        a.set_title(f"{n} simulated paths, weekly review at {trigger:.0%}: day {k}")
+        a.legend(loc="upper left", fontsize=8)
+
+        rows = [("sold early", int(early.sum()), AQUA),
+                ("still holding" if k < days else "sold on the deadline",
+                 int(n - early.sum()), BLUE)]
+        if k == days:
+            rows += [("review met the goal", int(met.sum()), AQUA),
+                     ("one-shot plan met it", int(shot_met.sum()), ORANGE)]
+        y = np.arange(len(rows))[::-1]
+        b.barh(y, [r[1] for r in rows], color=[r[2] for r in rows], height=0.6)
+        for yi, (lab, v, _) in zip(y, rows):
+            b.text(v + 0.8, yi, f"{v}", va="center", fontsize=9, color=INK)
+        b.set_yticks(y, [r[0] for r in rows], fontsize=9)
+        b.set_xlim(0, n * 1.12)
+        b.set_ylim(-0.6, 3.6)
+        b.set_xlabel("paths")
+        b.grid(axis="y", visible=False)
+        b.set_title("Tally")
+        fig.tight_layout()
+
+    FuncAnimation(fig, draw, frames=frames).save(path, writer=PillowWriter(fps=5), dpi=80)
+    plt.close(fig)

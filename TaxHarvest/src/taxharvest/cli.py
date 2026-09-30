@@ -185,6 +185,19 @@ def cmd_backtest(args):
     out.mkdir(parents=True, exist_ok=True)
     table.to_csv(out / "backtest.csv")
     plots.backtest({**bt, "_meta": meta}, out / "backtest.png", problem.rules.symbol, args.title)
+    if args.animate:
+        c = args.confidences[-1]
+        print("recording paths for the review animations")
+        rec = daily.backtest(problem, {"weekly": (c, 5)}, n_paths=400, n_inner=args.inner,
+                             record=True)["weekly"]
+        base = min(args.confidences)
+        shot = daily.backtest(problem, {"one-shot": -1}, n_paths=400, n_inner=args.inner,
+                              pool=pools[f"one-shot {base:.0%}"], record=True)["one-shot"]
+        cur = problem.rules.symbol
+        plots.animate_review_story(rec, shot, meta["loss_goal"], meta["days"],
+                                   out / "review_story.gif", cur, trigger=c)
+        plots.animate_review_paths(rec, shot, meta["loss_goal"], meta["days"],
+                                   out / "review_paths.gif", cur, trigger=c)
     print(f"-> {out / 'backtest.png'}")
 
 
@@ -290,6 +303,8 @@ def main(argv=None):
     b.add_argument("--inner", type=int, default=1000,
                    help="scenarios per review for the wait confidence")
     b.add_argument("--title", default="")
+    b.add_argument("--animate", action="store_true",
+                   help="also write review_story.gif and review_paths.gif")
     common(b, "out")
     b.set_defaults(fn=cmd_backtest)
 

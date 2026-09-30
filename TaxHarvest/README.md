@@ -21,6 +21,14 @@ recommendations.
 | 2. Dollar goal, capped sales | The goal is tax dollars, sales stop once it is reached, a sample portfolio and a Swiss control case | Sample portfolio: \$1,200 goal met in 89% of simulated paths, as designed for 90% |
 | 3. Weekly review (new) | Re-check with fresh prices; sell early when waiting becomes too risky | Goal met in **99.9%** of paths with 9 reviews, against 95% for the one-shot plan |
 
+![One simulated path: the weekly review sells on day 15, the one-shot plan misses](figures/sample/review_story.gif)
+
+*One simulated price path for the sample portfolio. Prices rally, so the losses shrink (blue).
+At each weekly review the planner asks how likely it is that waiting to the deadline still
+leaves the \$5,042 of loss needed (right). On day 15 that chance falls below 95%, so it sells
+and locks the goal in (green). The one-shot plan (orange) waits for its fixed sale date and
+ends up with a quarter of the goal.*
+
 The one-shot plan commits to one sale date and hopes enough losses survive until then. The
 review removes most of that risk by acting as soon as the odds turn. The main open question is
 what waiting is worth at all: in the model, selling today sells the least (see
@@ -146,6 +154,13 @@ When the review says sell, it writes `orders_<date>.csv` with shares, replacemen
 first safe buy-back date. After a trade, the portfolio CSV and `--harvested-loss` are updated
 by hand.
 
+![Sixty simulated paths under the weekly review](figures/sample/review_paths.gif)
+
+*Sixty simulated paths of the loss available in the sample portfolio. A green dot is a weekly
+review that decided to sell early because losses were shrinking; every other path waits and
+sells on day 40. The tally on the right fills in as the weeks pass: on these paths the review
+meets the goal every time, the one-shot plan in 56 of 60.*
+
 ### Does it work?
 
 `th.py backtest` runs each rule on the same 2,000 simulated price paths for the sample's
@@ -219,7 +234,8 @@ The engine is in [`src/taxharvest/`](src/taxharvest/) and the inputs in [`data/`
 Python 3.12+ and [uv](https://docs.astral.sh/uv/), `uv run --group dev pytest` runs the tests and
 `uv run python scripts/run_sample.py` regenerates the sample figures in [`figures/`](figures/).
 `scripts/th.py` has commands for the one-shot plan (`run`), the review (`daily`), the rule
-comparison (`backtest`), and the worked examples (`examples`). They read a portfolio CSV
+comparison (`backtest`, with `--animate` for the two review GIFs), and the worked examples
+(`examples`). They read a portfolio CSV
 (`account,ticker,shares,cost_basis,acquired,price[,drip]`) and optional planned purchases
 (`ticker,on,account`).
 

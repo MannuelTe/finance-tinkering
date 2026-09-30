@@ -38,7 +38,7 @@ if __name__ == "__main__":
               "--planned", str(ROOT / "data/sample_portfolio_planned.csv"),
               "--as-of", AS_OF.isoformat(), "--realized-gains", str(REALIZED_GAINS),
               "--tax-savings-goal", "1200", "--out", str(ROOT / "figures/sample"),
-              "--title", "Sample portfolio: $1,200 goal, 40 trading days"]
+              "--title", "Sample portfolio: $1,200 goal, 40 trading days", "--animate"]
              + (["--paths", "500"] if quick else []))
     print("\n=== Same portfolio, full tax-bill goal")
     print(report.describe(optimise(problem(US))))

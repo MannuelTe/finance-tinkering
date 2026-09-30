@@ -238,13 +238,17 @@ def describe(rev: Review, cur: str = "$") -> str:
 # ----------------------------------------------------------------------------- backtest
 def backtest(problem: HarvestProblem, triggers: dict[str, float | tuple[float, int]],
              n_paths: int = 1000,
-             n_inner: int = 2000, pool: np.ndarray | None = None, seed: int = 11) -> dict:
+             n_inner: int = 2000, pool: np.ndarray | None = None, seed: int = 11,
+             record: bool = False) -> dict:
     """Run daily rules on the same simulated price paths up to the problem's harvest date.
 
     ``triggers`` maps a rule name to its threshold, or to ``(threshold, every)`` to review only
     every ``every`` trading days (5 = weekly; the deadline is always a review day). Sell when
     P_wait < threshold (1.01 means sell at the first chance, -1 means wait for the deadline).
     ``pool`` optionally limits the deadline sale to the one-shot plan's maximum fractions.
+    ``record`` keeps each path's daily loss available before that day's sale (at that day's
+    prices, among lots eligible on the deadline), loss harvested by the end of the day, and the
+    wait confidence on review days.
     """
     p, uni, rules = problem.portfolio, problem.universe, problem.rules
     lots, days = p.lots, problem.horizon_days
@@ -276,43 +280,51 @@ def backtest(problem: HarvestProblem, triggers: dict[str, float | tuple[float, i
         sold_value = np.zeros(n_paths)
         first = np.full(n_paths, -1)
         sale_days = np.zeros(n_paths, int)
+        log = {k: np.full((n_paths, days + 1), np.nan)
+               for k in ("available", "harvested", "wait")} if record else None
         for t in range(days + 1):
             h = days - t
-            if h > 0 and t % every:
-                continue
             P = prices[:, t]
             rem = K - H
             active = rem > 1e-6
-            if not active.any():
-                break
-            if h == 0 or trigger > 1:
-                sell = active
-            elif trigger < 0:
-                sell = np.zeros(n_paths, bool)
-            else:
-                conf = np.ones(n_paths)
-                for a in np.array_split(np.flatnonzero(active), max(1, active.sum() // 100)):
-                    fut = P[a, None, :] * np.exp(inner[h][None])
-                    L = (held[a, None] * np.clip(basis - fut, 0, None) * elig_on[-1]).sum(-1)
-                    conf[a] = (L >= rem[a, None]).mean(1)
-                sell = active & (conf < trigger)
-            if not sell.any():
-                continue
-            per_share = np.clip(basis - P[sell], 0, None)
-            cap = held[sell] * per_share * elig_on[t]
-            if h == 0 and pool is not None:
-                cap = np.minimum(cap, pool * shares0 * per_share)
-            cost = held[sell] * P[sell] * weight
-            ex = np.stack([allocate_losses(cap[j], cost[j], rem[sell][j])[:, 0]
-                           for j in range(sell.sum())])
-            q = np.divide(ex, per_share, out=np.zeros_like(ex), where=per_share > 0)
-            held[sell] -= q
-            H[sell] += ex.sum(1)
-            sold_value[sell] += (q * P[sell]).sum(1)
-            did = np.zeros(n_paths, bool)
-            did[sell] = ex.sum(1) > 0
-            first[did & (first < 0)] = t
-            sale_days += did
+            if log is not None:  # before today's sale
+                per_share = np.clip(basis - P, 0, None)
+                cap = held * per_share
+                if pool is not None:
+                    cap = np.minimum(cap, pool * shares0 * per_share)
+                log["available"][:, t] = (cap * elig_on[-1]).sum(1)
+            if (h == 0 or t % every == 0) and active.any():
+                if h == 0 or trigger > 1:
+                    sell = active
+                elif trigger < 0:
+                    sell = np.zeros(n_paths, bool)
+                else:
+                    conf = np.ones(n_paths)
+                    for a in np.array_split(np.flatnonzero(active), max(1, active.sum() // 100)):
+                        fut = P[a, None, :] * np.exp(inner[h][None])
+                        L = (held[a, None] * np.clip(basis - fut, 0, None) * elig_on[-1]).sum(-1)
+                        conf[a] = (L >= rem[a, None]).mean(1)
+                    sell = active & (conf < trigger)
+                    if log is not None:
+                        log["wait"][active, t] = conf[active]
+                if sell.any():
+                    per_share = np.clip(basis - P[sell], 0, None)
+                    cap = held[sell] * per_share * elig_on[t]
+                    if h == 0 and pool is not None:
+                        cap = np.minimum(cap, pool * shares0 * per_share)
+                    cost = held[sell] * P[sell] * weight
+                    ex = np.stack([allocate_losses(cap[j], cost[j], rem[sell][j])[:, 0]
+                                   for j in range(sell.sum())])
+                    q = np.divide(ex, per_share, out=np.zeros_like(ex), where=per_share > 0)
+                    held[sell] -= q
+                    H[sell] += ex.sum(1)
+                    sold_value[sell] += (q * P[sell]).sum(1)
+                    did = np.zeros(n_paths, bool)
+                    did[sell] = ex.sum(1) > 0
+                    first[did & (first < 0)] = t
+                    sale_days += did
+            if log is not None:
+                log["harvested"][:, t] = H
         saved = problem.tax_rate * np.minimum(H, max(problem.realized_gains, 0.0))
         out[name] = {
             "trigger": trigger, "every": every, "P(goal met)": float(np.mean(H >= K - 0.01)),
@@ -322,5 +334,7 @@ def backtest(problem: HarvestProblem, triggers: dict[str, float | tuple[float, i
             "median sale day": float(np.median(first[first >= 0])) if (first >= 0).any() else None,
             "tax_saved": saved, "sold_value": sold_value, "first_sale_day": first,
         }
+        if log is not None:
+            out[name]["trace"] = log
     out["_meta"] = {"loss_goal": K, "days": days, "n_paths": n_paths, "n_inner": n_inner}
     return out
