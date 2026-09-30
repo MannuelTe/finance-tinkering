@@ -1,0 +1,49 @@
+date,session,label,direction,channel,timing,knowable,direct,note,source
+2011-03-11,pre,Fukushima Daiichi accident,bear,demand,surprise,no,,Quake 00:46 ET; reactor crisis escalated over the weekend,
+2011-05-25,pre,Switzerland decides nuclear phase-out,bear,demand,surprise,yes,,Federal Council special meeting (European daytime),https://www.admin.ch/gov/en/start/dokumentation/medienmitteilungen.msg-id-39337.html
+2011-05-30,pre,Germany decides phase-out by 2022,bear,demand,surprise,yes,,Announced early Monday in Berlin; US Memorial Day so day 0 is 05-31,https://www.nbcnews.com/id/wbna43214183
+2011-06-13,pre,Italy referendum rejects nuclear,bear,demand,scheduled,no,,Polls closed 15:00 CET Monday (09:00 ET),https://en.wikipedia.org/wiki/2011_Italian_referendums
+2012-09-14,pre,Japan targets zero nuclear in the 2030s,bear,demand,surprise,yes,,Energy and Environment Council (Tokyo daytime); never adopted by cabinet,https://www.brookings.edu/wp-content/uploads/2012/09/20121005_japan_energy.pdf
+2012-10-22,pre,Dominion to close Kewaunee,bear,demand,surprise,yes,D,AP story timestamped 13:15 UTC,https://www.world-nuclear-news.org/Articles/Dominion-decides-to-close-Kewaunee
+2013-06-07,unknown,Edison closes San Onofre for good,bear,demand,surprise,yes,EIX,,https://newsroom.edison.com/releases/southern-california-edison-announces-plans-to-retire-san-onofre-nuclear-generating-station
+2013-08-27,unknown,Entergy to close Vermont Yankee,bear,demand,surprise,yes,ETR,,https://www.vermontpublic.org/vpr-news/2013-08-27/entergy-to-close-vermont-yankee-news-coverage-timeline-and-summary
+2015-10-13,unknown,Entergy to close Pilgrim,bear,demand,surprise,yes,ETR,,https://www.world-nuclear-news.org/Articles/Entergy-decides-to-close-Pilgrim-plant
+2016-06-02,unknown,Exelon to close Clinton and Quad Cities,bear,demand,surprise,yes,EXC,Later reversed by Illinois subsidies,https://www.sec.gov/Archives/edgar/data/0001109357/000119312516610539/d366527dex991.htm
+2016-06-21,unknown,PG&E to close Diablo Canyon,bear,demand,surprise,yes,PCG,Later reversed in 2022,https://www.sfgate.com/business/article/End-of-an-atomic-era-PG-E-to-close-Diablo-Canyon-8314258.php
+2017-01-09,unknown,Indian Point closure deal,bear,demand,surprise,yes,ETR,Next day is the Kazatomprom cut; windows overlap,https://www.wamc.org/hudson-valley-news/2017-01-09/cuomo-entergy-official-separately-announce-indian-point-closure
+2017-03-29,unknown,Westinghouse files Chapter 11,bear,demand,scheduled,yes,,Widely reported as imminent in the week before,https://money.cnn.com/2017/03/29/investing/westinghouse-nuclear-bankruptcy-toshiba/
+2017-05-30,unknown,Exelon to close TMI-1 absent policy support,bear,demand,surprise,yes,EXC,Added in verification: the original closure announcement,https://www.witf.org/2017/05/30/exelon-to-prematurely-close-three-mile-island-nuclear-power-plant/
+2017-07-31,unknown,V.C. Summer new build abandoned,bear,demand,surprise,yes,,Santee Cooper board vote,https://www.utilitydive.com/news/santee-cooper-scana-abandon-summer-nuclear-plant-construction/448262/
+2019-05-08,unknown,Exelon confirms TMI-1 closure,bear,demand,scheduled,yes,EXC,Confirms the 2017-05-30 announcement; relabelled scheduled,https://www.world-nuclear-news.org/Articles/Three-Mile-Island-unit-1-closure-confirmed
+2019-07-12,intra,Section 232: no import quota for uranium,bear,policy,scheduled,yes,UUUU,Press reports of the decision moved prices during Friday's session (UUUU -36% on 20x volume); official memo came after the close,https://investors.energyfuels.com/2019-07-12-There-Has-Been-No-Announced-Decision-with-Respect-to-the-Uranium-Section-232-Trade-Action
+2022-02-09,unknown,Cameco plans McArthur River restart,bear,supply,scheduled,yes,CCJ,Q4-2021 results (was 02-08 in the first draft),https://www.nucnet.org/news/canadian-uranium-miner-announces-plans-to-restart-mcarthur-river-key-lake-facilities-2-4-2022
+2023-04-15,weekend,Germany shuts its last three reactors,bear,demand,scheduled,no,,Saturday; fully expected,
+2025-01-27,pre,DeepSeek scare hits AI power-demand trade,bear,demand,surprise,no,,App topped charts over the weekend; model released 01-20,
+2024-11-01,post,FERC rejects Talen-Amazon nuclear co-location expansion,bear,policy,surprise,yes,,Friday after the close; CEG -12.5% and LEU -28.8% on Monday 11-04. Added while screening,https://www.utilitydive.com/news/ferc-interconnection-isa-talen-amazon-data-center-susquehanna-exelon/731841/
+2015-08-11,pre,Sendai 1 restarts in Japan,bull,demand,scheduled,no,,10:30 JST,https://www.voanews.com/a/japan-restarts-nuclear-reactor-under-new-safety-standards/2913196.html
+2017-01-10,pre,Kazatomprom cuts output 10%,bull,supply,surprise,yes,,Announced in Astana,https://www.world-nuclear-news.org/Articles/Oversupply-prompts-Kazakh-uranium-production-cut
+2017-11-08,post,Cameco suspends McArthur River,bull,supply,surprise,yes,CCJ,Conference call next morning 07:00 ET; day 0 is 11-09,https://www.cameco.com/media/news/cameco-to-suspend-production-from-mcarthur-river-and-key-lake-operations-an
+2017-12-04,pre,Kazatomprom cuts output 20% for 2018-2020,bull,supply,surprise,yes,,Announced in Astana,https://www.miningweekly.com/article/uranium-companies-jump-on-another-round-of-kazatomprom-production-cuts-2017-12-04
+2018-01-16,pre,Section 232 petition filed,bull,policy,surprise,yes,UUUU,PR Newswire 05:05 ET,https://www.prnewswire.com/news-releases/energy-fuels-and-ur-energy-jointly-file-section-232-petition-with-us-commerce-department-to-investigate-effects-of-uranium-imports-on-us-national-security-669609993.html
+2018-07-25,post,McArthur River suspended indefinitely,bull,supply,surprise,yes,CCJ,With Q2 results; call next morning 08:00 ET; day 0 is 07-26,https://www.sec.gov/Archives/edgar/data/0001009001/000119312518226987/d521544dex991.htm
+2020-03-23,unknown,Cameco suspends Cigar Lake for COVID,bull,supply,surprise,yes,CCJ,Crash-period market noise,https://www.sec.gov/Archives/edgar/data/1009001/000119312520083410/d832939dex1.htm
+2020-04-07,pre,Kazatomprom cuts operations for COVID,bull,supply,surprise,yes,,Announced in Astana,https://world-nuclear.org/information-library/current-and-future-generation/covid-19-coronavirus-and-nuclear-energy
+2022-08-24,pre,Japan signals restarts and new reactors,bull,demand,surprise,yes,,GX council in Tokyo,https://www.cnn.com/2022/08/24/energy/japan-nuclear-power-push-kishida-intl-hnk
+2022-08-31,post,California extends Diablo Canyon,bull,demand,scheduled,no,,SB 846 passed in the session's final hours; day 0 is 09-01,https://www.cpuc.ca.gov/industries-and-topics/electrical-energy/electric-costs/what-are-nuclear-electric-cost/senate-bill-846
+2023-07-26,pre,Niger coup,bull,supply,surprise,no,,Detention reported Wednesday; coup declared on TV after midnight Niamey,https://www.aljazeera.com/news/2023/7/26/soldiers-in-niger-claim-to-overthrow-mohamed-barzoums-government
+2023-12-02,weekend,COP28 pledge to triple nuclear,bull,demand,scheduled,no,,Saturday,
+2024-01-12,pre,Kazatomprom warns of 2024 shortfall,bull,supply,surprise,yes,,4Q23 trading update from Astana,https://www.bloomberg.com/news/articles/2024-01-12/world-s-biggest-uranium-miner-warns-of-production-shortfall
+2024-05-13,unknown,US bans Russian uranium imports,bull,policy,scheduled,no,,Signed into law; Senate passed it 04-30,
+2024-06-20,unknown,Niger revokes Orano's Imouraren permit,bull,supply,surprise,yes,,Orano statement Thursday; withdrawal dated 06-19,https://www.world-nuclear-news.org/articles/niger-revokes-mining-permit-for-imouraren-project
+2024-08-23,pre,Kazatomprom cuts 2025 guidance,bull,supply,surprise,yes,,1H24 results from Astana,https://www.world-nuclear-news.org/articles/kazatomprom-lowers-2025-uranium-production-expecta
+2024-09-20,pre,Microsoft deal to restart TMI-1,bull,demand,surprise,yes,CEG,CEG +22% on the day,https://www.cnbc.com/2024/09/20/constellation-energy-to-restart-three-mile-island-and-sell-the-power-to-microsoft.html
+2024-10-14,unknown,Google-Kairos SMR deal,bull,demand,surprise,yes,,,https://blog.google/company-news/outreach-and-initiatives/sustainability/google-kairos-power-nuclear-energy-agreement/
+2024-10-16,unknown,Amazon-X-energy SMR deal,bull,demand,surprise,yes,,,https://www.world-nuclear-news.org/articles/amazon-invests-in-x-energy-unveils-smr-project-plans
+2024-11-15,pre,Russia restricts enriched uranium to US,bull,supply,surprise,yes,LEU,Decree published in Moscow,https://www.world-nuclear-news.org/articles/russia-places-ban-on-us-uranium-exports
+2025-05-23,unknown,US executive orders to quadruple nuclear,bull,policy,surprise,yes,OKLO,Signed Friday; drafts reported earlier in May,https://www.hklaw.com/en/insights/publications/2025/05/president-trump-signs-4-executive-orders
+2025-08-22,pre,Kazatomprom cuts 2026 output about 10%,bull,supply,surprise,yes,,Added in verification; 1H25 results from Astana,https://www.world-nuclear-news.org/articles/kazatomprom-to-lower-uranium-production-in-2026
+2013-12-10,intra,Last Megatons-to-Megawatts delivery,none,military,scheduled,no,,Offloading ceremony in Baltimore,https://world-nuclear-news.org/Articles/Megatons-to-Megawatts-program-concludes
+2018-05-08,intra,US leaves Iran nuclear deal,none,military,scheduled,no,,Announced 14:00 ET,
+2019-08-02,pre,INF treaty ends,none,military,scheduled,no,,,
+2022-02-24,pre,Russia invades Ukraine,none,military,surprise,no,,Confounded with a broad market shock,
+2023-02-21,pre,Russia suspends New START,none,military,surprise,no,,Putin address (Moscow morning),
