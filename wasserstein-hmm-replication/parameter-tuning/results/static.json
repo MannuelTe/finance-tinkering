@@ -1,0 +1,92 @@
+{
+ "joint": {
+  "by_turnover": [
+   {
+    "band": "<0.001",
+    "sharpe": 1.89,
+    "static_avg": 1.863,
+    "static_day1": 1.708,
+    "timing": 0.027,
+    "n": 121
+   },
+   {
+    "band": "0.001-0.005",
+    "sharpe": 1.845,
+    "static_avg": 1.924,
+    "static_day1": 1.816,
+    "timing": -0.079,
+    "n": 23
+   },
+   {
+    "band": "0.005-0.02",
+    "sharpe": 1.587,
+    "static_avg": 1.894,
+    "static_day1": 1.736,
+    "timing": -0.307,
+    "n": 26
+   },
+   {
+    "band": ">0.02",
+    "sharpe": 1.486,
+    "static_avg": 1.908,
+    "static_day1": 1.757,
+    "timing": -0.422,
+    "n": 30
+   }
+  ],
+  "timing_mean": -0.09592544403231602,
+  "share_timing_positive": 0.27,
+  "corr_sharpe_static": 0.7027749299790388
+ },
+ "E4": {
+  "by_turnover": [
+   {
+    "band": "<0.001",
+    "sharpe": 1.901,
+    "static_avg": 1.916,
+    "static_day1": 1.695,
+    "timing": -0.014,
+    "n": 56
+   },
+   {
+    "band": "0.001-0.005",
+    "sharpe": 1.887,
+    "static_avg": 1.973,
+    "static_day1": 1.924,
+    "timing": -0.086,
+    "n": 10
+   },
+   {
+    "band": "0.005-0.02",
+    "sharpe": 1.714,
+    "static_avg": 2.013,
+    "static_day1": 1.905,
+    "timing": -0.299,
+    "n": 14
+   },
+   {
+    "band": ">0.02",
+    "sharpe": 1.433,
+    "static_avg": 1.949,
+    "static_day1": 1.669,
+    "timing": -0.516,
+    "n": 20
+   }
+  ],
+  "timing_mean": -0.1616096266959191,
+  "share_timing_positive": 0.2,
+  "corr_sharpe_static": 0.6820231674403208
+ },
+ "fixed_paper_data": {
+  "equal weight": 1.5875410278980127,
+  "paper average HMM": 2.342210524159535,
+  "paper average renormalised": 2.3422105241595355
+ },
+ "asset_sharpes_paper_data": {
+  "SPX": 1.1747743960855384,
+  "IEF": 0.5110413941830633,
+  "GLD": 1.8061963536675227,
+  "USO": 0.2992367519165208,
+  "UUP": 0.4787715609361188
+ }
+}
