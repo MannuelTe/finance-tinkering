@@ -150,3 +150,56 @@ def backtest(t: pd.DataFrame, baseline: np.ndarray, out: Path):
     fig.tight_layout()
     fig.savefig(out, dpi=150)
     plt.close(fig)
+
+
+AQUA, GREY = "#1baf7a", "#c3c2b7"
+
+
+def insider(sc: pd.DataFrame, placebo: pd.DataFrame, paths: dict, out: Path, car_t_min=3.0,
+            vol_z_min=2.0):
+    """Left: pre-announcement price t vs volume z, events over a placebo cloud.
+    Right: mean signed basket path before and after, by whether the news was knowable."""
+    style()
+    fig, (a, b) = plt.subplots(1, 2, figsize=(11, 4.4), gridspec_kw={"width_ratios": [1, 1]})
+    a.scatter(placebo["car_t"], placebo["vol_z"], s=8, color=GREY, alpha=0.6, lw=0,
+              label=f"random days ({len(placebo):,})")
+    for k, color, lab in (("yes", BLUE, "news someone could know first"),
+                          ("no", AQUA, "news nobody could know first")):
+        for inst, marker in (("basket", "o"), ("direct", "^")):
+            s = sc[(sc.knowable == k) & ((sc.instrument == "basket") == (inst == "basket"))]
+            if s.empty:
+                continue
+            a.scatter(s["car_t"], s["vol_z"], s=34, marker=marker, color=color,
+                      edgecolor=SURFACE, lw=1, zorder=3,
+                      label=f"{lab}, {'uranium basket' if inst == 'basket' else 'direct stock'}")
+    xmax = max(5, sc["car_t"].abs().max() + 0.5)
+    a.fill_between([car_t_min, xmax], vol_z_min, 7.5, color=ORANGE, alpha=0.08, lw=0)
+    a.text(xmax - 0.1, 2.1, "flag zone", ha="right", va="bottom", fontsize=8, color=INK2)
+    for _, r in sc[(sc.flag) | (sc.car_t.abs() >= car_t_min)].iterrows():
+        name = r["instrument"] if r["instrument"] != "basket" else "Basket"
+        a.annotate(f"{name}, {pd.Timestamp(r['day0']):%b %Y}", (r["car_t"], r["vol_z"]),
+                   xytext=(-6, 0), textcoords="offset points", fontsize=8, color=INK2,
+                   ha="right", va="center")
+    a.axhline(0, color=AXIS, lw=1)
+    a.axvline(0, color=AXIS, lw=1)
+    a.set_xlim(-xmax, xmax)
+    a.set_ylim(-3, 7.5)
+    a.set_xlabel("Price move over days −10 to −1, in the news direction (t-stat)")
+    a.set_ylabel("Volume over days −10 to −1 (z-score)")
+    a.set_title("Pre-announcement footprints")
+    a.legend(loc="upper left", fontsize=7, markerscale=0.9)
+    for (name, ar), color in zip(paths.items(), (BLUE, AQUA)):
+        m, lo, hi = _band(ar)
+        days = ar.columns.to_numpy()
+        b.fill_between(days, lo, hi, color=color, alpha=0.15, lw=0)
+        b.plot(days, m, color=color, label=f"{name} (n={len(ar)})")
+    b.axvline(0, color=AXIS, lw=1)
+    b.axhline(0, color=AXIS, lw=1)
+    b.set_title("Uranium basket before the news")
+    b.set_xlabel("Trading days from the news")
+    b.set_ylabel("Mean abnormal return, in the news direction")
+    b.yaxis.set_major_formatter(PercentFormatter(1.0, decimals=0))
+    b.legend(loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out, dpi=150)
+    plt.close(fig)

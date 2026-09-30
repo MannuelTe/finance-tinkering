@@ -3,6 +3,7 @@
     uransig run [--refresh]      event study, symmetry test, variants, figure
     uransig speed                half-lives, equity vs physical vs spot lead-lag
     uransig backtest             walk-forward drift trade with costs
+    uransig insider              pre-announcement footprints: run-up and volume before news
     uransig events               per-event window sums
 """
 
@@ -15,8 +16,16 @@ import numpy as np
 import pandas as pd
 
 from . import backtest as bt
-from . import plots, speed, study
-from .prices import MARKET, PHYSICAL, PROXIES, load_prices, load_spot, log_returns
+from . import insider, plots, speed, study
+from .prices import (
+    MARKET,
+    PHYSICAL,
+    PROXIES,
+    load_prices,
+    load_spot,
+    load_volume,
+    log_returns,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 EVENTS = ROOT / "data" / "events.csv"
@@ -155,6 +164,51 @@ def backtest_cmd(args):
     plots.backtest(t, base, ROOT / "figures" / "backtest.png")
 
 
+def insider_cmd(args):
+    ret, ev = _data(args.refresh)
+    vol = load_volume()
+    sc = insider.screen(ret, vol, ev, list(PROXIES))
+    sc["kind"] = np.where(sc.instrument == "basket", "basket", "direct")
+    pos = study.align(ev["date"], ret.index, ev["session"])
+    pb = insider.placebo(ret, vol, list(PROXIES), insider.BASKET_MARKET, exclude=pos)
+    pbd = pd.concat([insider.placebo(ret, vol, [t], insider.DIRECT_MARKET, n=150, exclude=pos,
+                                     direct=True) for t in sorted(ev.direct[ev.direct != ""].unique())])
+    pd.set_option("display.width", 200, "display.float_format", "{:+.2f}".format)
+    cols = ["day0", "label", "direction", "knowable", "instrument", "car", "car_t", "vol_z",
+            "reaction", "flag"]
+    print(sc[cols].to_string(index=False))
+    print("\n== flag rates (car_t >= 3 and vol_z >= 2)")
+    for name, e, p in (("basket", sc[sc.kind == "basket"], pb),
+                       ("direct", sc[sc.kind == "direct"], pbd)):
+        print(f"{name:7s} events {e.flag.sum()}/{len(e)}  random days {p.flag.mean():.2%} "
+              f"of {len(p)}  expected false flags among events {p.flag.mean() * len(e):.2f}")
+    print("\n== detection limits (median over events): run-up and volume needed for a flag")
+    for name, e in sc.groupby("kind"):
+        print(f"{name:7s} run-up >= {e.min_runup.median():.1%} over 10 days "
+              f"and volume >= {e.min_vol_x.median():.1f}x normal for 10 days")
+    print("\n== basket, knowable vs not (signed CAR -10..-1)")
+    b = sc[sc.kind == "basket"]
+    for k in ("yes", "no"):
+        g = b[b.knowable == k]
+        print(f"knowable={k:3s} n={len(g):2d}  mean run-up {g.car.mean():+.3f}  mean t "
+              f"{g.car_t.mean():+.2f}  mean vol_z {g.vol_z.mean():+.2f}  "
+              f"share t>1.64 {(g.car_t > 1.64).mean():.0%}")
+    p = insider.permutation_p(b[b.knowable == "yes"].car.to_numpy(),
+                              b[b.knowable == "no"].car.to_numpy())
+    print(f"one-sided permutation p (knowable run-up > unknowable): {p:.3f}")
+    print(f"random days: share t>1.64 {(pb.car_t > 1.64).mean():.0%}")
+    d = sc[sc.kind == "direct"]
+    print(f"\n== direct stocks: mean run-up {d.car.mean():+.3f}, mean t {d.car_t.mean():+.2f}, "
+          f"mean vol_z {d.vol_z.mean():+.2f} (random days: t {pbd.car_t.mean():+.2f}, "
+          f"vol_z {pbd.vol_z.mean():+.2f})")
+    paths = {}
+    for k, name in (("yes", "Someone could know first"), ("no", "Nobody could know first")):
+        e = ev[(ev.knowable == k) & (ev.direction != "none")]
+        ar, _ = _paths(ret, e)
+        paths[name] = ar.loc[:, -20:5]
+    plots.insider(sc, pd.concat([pb, pbd]), paths, ROOT / "figures" / "insider.png")
+
+
 def events(args):
     ret, ev = _data(args.refresh)
     ar, kept = _paths(ret, ev)
@@ -168,7 +222,7 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog="uransig")
     sub = p.add_subparsers(dest="cmd", required=True)
     for name, fn in (("run", run), ("speed", speed_cmd), ("backtest", backtest_cmd),
-                     ("events", events)):
+                     ("insider", insider_cmd), ("events", events)):
         s = sub.add_parser(name)
         s.add_argument("--refresh", action="store_true", help="re-download prices")
         s.set_defaults(fn=fn)

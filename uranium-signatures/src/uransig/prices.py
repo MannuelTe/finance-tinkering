@@ -12,23 +12,36 @@ import pandas as pd
 PROXIES = ("CCJ", "DNN", "NXE", "URA")
 MARKET = ("SPY", "XLE")
 PHYSICAL = "U-U.TO"  # Sprott Physical Uranium Trust, USD line: a daily price for pounds held
+# Securities an informed trader would most naturally use for a given event (events.csv 'direct')
+DIRECT = ("EXC", "ETR", "D", "EIX", "PCG", "UUUU", "CEG", "LEU", "OKLO", "XLU")
 CACHE = Path(__file__).resolve().parents[2] / "data" / "cache" / "prices.csv"
+VOLUME_CACHE = CACHE.with_name("volume.csv")
 SPOT_CACHE = CACHE.with_name("spot_monthly.csv")
 FRED = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=PURANUSDM"
 
 
-def load_prices(refresh: bool = False, path: Path = CACHE) -> pd.DataFrame:
-    """Adjusted closes, one column per ticker, indexed by trading day."""
-    if path.exists() and not refresh:
-        return pd.read_csv(path, index_col=0, parse_dates=True)
+def _download():
     import yfinance as yf
 
-    tickers = list(PROXIES + MARKET + (PHYSICAL,))
-    px = yf.download(tickers, start="2005-01-01", auto_adjust=True, progress=False)["Close"]
-    px = px[tickers].dropna(how="all")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    px.to_csv(path)
-    return px
+    tickers = list(dict.fromkeys(PROXIES + MARKET + (PHYSICAL,) + DIRECT))
+    d = yf.download(tickers, start="2005-01-01", auto_adjust=True, progress=False)
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    d["Close"][tickers].dropna(how="all").to_csv(CACHE)
+    d["Volume"][tickers].dropna(how="all").to_csv(VOLUME_CACHE)
+
+
+def load_prices(refresh: bool = False) -> pd.DataFrame:
+    """Adjusted closes, one column per ticker, indexed by trading day."""
+    if refresh or not CACHE.exists() or not VOLUME_CACHE.exists():
+        _download()
+    return pd.read_csv(CACHE, index_col=0, parse_dates=True)
+
+
+def load_volume() -> pd.DataFrame:
+    """Daily share volume, same layout as load_prices; call load_prices first."""
+    if not VOLUME_CACHE.exists():
+        _download()
+    return pd.read_csv(VOLUME_CACHE, index_col=0, parse_dates=True)
 
 
 def log_returns(px: pd.DataFrame) -> pd.DataFrame:
