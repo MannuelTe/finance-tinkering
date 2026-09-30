@@ -1,9 +1,9 @@
 # TaxHarvest
 
-TaxHarvest helps you meet a **tax-saving goal in dollars** by selling losing positions. It picks
-which lots to sell, sells only as much loss as the goal needs, screens for
-[US wash sales][us-rules] and [Canadian superficial losses][ca-rules], and suggests a
-replacement for each sale so the money stays invested. A **weekly review** then re-checks the
+TaxHarvest is a pet project that plans how to meet a **tax-saving goal in dollars** by selling
+losing positions. It picks which lots to sell, sells only as much loss as the goal needs,
+screens for [US wash sales][us-rules] and [Canadian superficial losses][ca-rules], and suggests
+a replacement for each sale so the money stays invested. A **weekly review** then re-checks the
 plan with fresh prices and says when to lock the losses in.
 
 I built it from Switzerland, where [private gains on securities are generally untaxed][ch-rules]
@@ -25,39 +25,6 @@ The one-shot plan commits to one sale date and hopes enough losses survive until
 review removes most of that risk by acting as soon as the odds turn. The main open question is
 what waiting is worth at all: in the model, selling today sells the least (see
 [below](#weekly-review)).
-
-## Try it
-
-From `TaxHarvest/`, use Python 3.12 or later and [uv](https://docs.astral.sh/uv/):
-
-```bash
-uv sync
-uv run --group dev pytest
-uv run python scripts/run_sample.py --quick
-uv run python scripts/th.py examples --only canada --quick
-```
-
-Three commands work on your own portfolio CSV and take the same inputs. `run` makes the one-shot
-plan with charts and GIFs, `daily` gives today's review, and `backtest` compares review rules:
-
-```bash
-uv run python scripts/th.py run data/us_portfolio.csv \
-    --planned data/us_portfolio_planned.csv --as-of 2026-09-24 --jurisdiction US \
-    --realized-gains 15000 --tax-savings-goal 1000 --confidence 0.9 --horizon-days 40
-```
-
-Swap `run` for `daily` (add `--harvested-loss` once you have sold something; the default
-deadline is the last weekday of the year) or for `backtest`. `run` and `backtest` default to
-90% confidence, `daily` to 95% with a weekly review.
-
-- **Portfolio:** `account,ticker,shares,cost_basis,acquired,price`, and `drip` optionally.
-  Planned purchases use `ticker,on,account`. `th.py interactive` lets you type lots in instead.
-- **Goal:** if you omit `--tax-savings-goal`, the goal is the full modeled tax on the gains you
-  supplied. When that cannot be met at the chosen confidence, the report shows the largest
-  goal that can, and plans for that.
-- **Outputs:** everything goes to `out/` by default (`figures/` for the examples). `trades.csv`
-  from `run` lists *maximum* sales, not fixed orders: on the sale date,
-  `HarvestPlan.execute(prices)` sells the cheapest losses first and stops at the goal.
 
 ## Worked example: the sample portfolio
 
@@ -121,7 +88,7 @@ together and spread out as time passes, and some drift below the dashed "loss ne
 Right: where all paths end up on each day. The orange share, the paths that would miss the
 goal, grows toward the sale date. This spread is why the plan needs a buffer.
 
-**2. How much buffer to hold depends on the confidence you ask for.**
+**2. How much buffer to hold depends on the required confidence.**
 ![Candidate holdings as required confidence rises](figures/sample/frontier_sweep.gif)
 
 Each frame re-plans with a stricter confidence requirement: 50%, 70%, 80%, 90%, 95%. Left: how
@@ -152,10 +119,10 @@ asks again each week, from that day's prices:
 1. **How much loss is still needed?** The goal minus what has already been harvested.
 2. **If I wait until the deadline, how likely is it that enough loss remains?** The review
    simulates prices to the deadline, using every lot the rules allow on that date.
-3. **Hold or sell.** If that chance is at least your confidence, hold. If it drops below, or it
+3. **Hold or sell.** If that chance is at least the chosen confidence, hold. If it drops below, or it
    is the deadline, sell today until the remaining need is covered. That part is then certain.
 
-Run it once a week and keep the CSV up to date. For the sample portfolio on 2026-09-28:
+The review is meant to run once a week. For the sample portfolio on 2026-09-28:
 
 ```text
 $ th.py daily data/sample_portfolio.csv --planned data/sample_portfolio_planned.csv \
@@ -169,14 +136,15 @@ $ th.py daily data/sample_portfolio.csv --planned data/sample_portfolio_planned.
   next review: 2026-10-05
 ```
 
-Three numbers track where you stand, and each run adds them to `review_log.csv`:
+Three numbers track progress, and each run adds them to `review_log.csv`:
 
 - **progress:** loss harvested ÷ loss goal;
 - **cover:** eligible loss today ÷ loss still needed; at 1× or more, today could finish the job;
 - **wait confidence:** the chance that waiting to the deadline still leaves enough.
 
 When the review says sell, it writes `orders_<date>.csv` with shares, replacements and the
-first safe buy-back date. After you trade, update the portfolio CSV and `--harvested-loss`.
+first safe buy-back date. After a trade, the portfolio CSV and `--harvested-loss` are updated
+by hand.
 
 ### Does it work?
 
@@ -232,8 +200,8 @@ some room for finite-scenario error while still pursuing available savings.
 
 The rule screen checks taxable status, recent and planned purchases of the same security or
 index group, purchases in other accounts, and DRIPs. Its fund grouping is conservative and
-editable. The screen only knows about accounts and purchases you supply; include relevant
-spouse and retirement accounts and scheduled contributions. See [`washsale.py`](src/taxharvest/washsale.py).
+editable. The screen only knows about the accounts and purchases in its input, so spouse and
+retirement accounts and scheduled contributions have to be listed there. See [`washsale.py`](src/taxharvest/washsale.py).
 
 The default [factor parameters](src/taxharvest/assets.csv) are illustrative. Pass
 `--history prices.csv` to fit a persistent market-regime model to daily prices; Student-t and
@@ -241,24 +209,31 @@ bootstrap models are available for stress tests.
 
 The review's wait confidence is the same chance constraint, computed from the current day with
 the remaining need $K - H$ (where $H$ is the loss already harvested) and every lot eligible on
-the deadline. It assumes you do nothing until the deadline, so it errs on the safe side: a real
+the deadline. It assumes nothing is sold before the deadline, so it errs on the safe side: a real
 review can still act next week. The backtest nests one simulation inside another: 1,000 fresh
 scenarios at each review on each of 2,000 paths.
+
+## Code and reproduction
+
+The engine is in [`src/taxharvest/`](src/taxharvest/) and the inputs in [`data/`](data/). With
+Python 3.12+ and [uv](https://docs.astral.sh/uv/), `uv run --group dev pytest` runs the tests and
+`uv run python scripts/run_sample.py` regenerates the sample figures in [`figures/`](figures/).
+`scripts/th.py` has commands for the one-shot plan (`run`), the review (`daily`), the rule
+comparison (`backtest`), and the worked examples (`examples`). They read a portfolio CSV
+(`account,ticker,shares,cost_basis,acquired,price[,drip]`) and optional planned purchases
+(`ticker,on,account`).
 
 ## Limits
 
 - Tax is represented by one effective rate. The model does not implement US short-term/long-term
   netting, all Canadian tax edge cases, or the value of capital-loss carryforwards.
 - The review counts weekdays as trading days and ignores market holidays. It does not track
-  new gains for you: pass the year's realized gains each time.
+  new gains itself: the year's realized gains are an input to each review.
 - Every result, including the backtest, assumes the return model is right. The
   [results](docs/RESULTS.md) stress-test the one-shot plan against other models; the review
   rules have not been stress-tested that way yet.
 - Replacement similarity is a modeling judgment. The execution method assumes fractional shares
   and rounds down to six decimal places; broker restrictions can leave a small shortfall.
-
-Source code is in [`src/taxharvest/`](src/taxharvest/), inputs in [`data/`](data/), and generated
-figures in [`figures/`](figures/).
 
 [us-rules]: https://www.irs.gov/publications/p550
 [ca-rules]: https://www.canada.ca/en/revenue-agency/services/tax/individuals/topics/about-your-tax-return/tax-return/completing-a-tax-return/personal-income/line-12700-capital-gains/capital-losses-deductions.html/1000
