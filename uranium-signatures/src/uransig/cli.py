@@ -4,6 +4,7 @@
     uransig speed                half-lives, equity vs physical vs spot lead-lag
     uransig backtest             walk-forward drift trade with costs
     uransig insider              pre-announcement footprints: run-up and volume before news
+    uransig options [--dry-run]  directional options volume before news (Massive API key)
     uransig events               per-event window sums
 """
 
@@ -17,6 +18,7 @@ import pandas as pd
 
 from . import backtest as bt
 from . import insider, plots, speed, study
+from . import options as opt
 from .prices import (
     MARKET,
     PHYSICAL,
@@ -209,6 +211,55 @@ def insider_cmd(args):
     plots.insider(sc, pd.concat([pb, pbd]), paths, ROOT / "figures" / "insider.png")
 
 
+OPTIONABLE = {"CCJ", "URA", "DNN", "NXE", "UUUU", "LEU", "CEG", "OKLO", "EXC", "ETR", "D",
+              "EIX", "PCG"}
+
+
+def options_cmd(args):
+    px = load_prices(args.refresh)
+    ret = log_returns(px)
+    ev = pd.concat([study.load_events(EVENTS).assign(catalog="sector"),
+                    study.load_events(ROOT / "data" / "company_events.csv").assign(
+                        catalog="company")], ignore_index=True)
+    ev = ev[ev.direction != "none"].reset_index(drop=True)
+    pos = study.align(ev["date"], ret.index, ev["session"])
+    since = pd.Timestamp(args.since)
+    ok = [p + opt.BASELINE[0] >= 0 and p + 1 < len(ret) and ret.index[p + opt.BASELINE[0]] >= since
+          for p in pos]
+    ev, pos = ev[ok].reset_index(drop=True), pos[ok]
+    client = opt.Client.from_env()
+    rows = []
+    print(f"{len(ev)} events with a full baseline after {since.date()}"
+          + (" (dry run: contract lists only)" if args.dry_run else ""))
+    for (_, e), p in zip(ev.iterrows(), pos):
+        unders = ["CCJ", "URA"] + ([e["direct"]] if e["direct"] in OPTIONABLE - {"CCJ"} else [])
+        for u in unders:
+            r = opt.screen_event(client, u, ret.index[p], e["direction"], ret.index, px[u],
+                                 dry_run=args.dry_run)
+            r.pop("series", None)
+            rows.append({"day0": ret.index[p].date(), "label": e["label"][:45],
+                         "direction": e["direction"], "knowable": e["knowable"],
+                         "catalog": e["catalog"], **r})
+            print(f"  {rows[-1]['day0']} {u:5s} {r['contracts']:4d} contracts"
+                  + ("" if args.dry_run else f"  z {r['z']:+.2f}  x{r['ratio']:.1f}")
+                  + f"  [{client.calls} API calls so far]", flush=True)
+    out = pd.DataFrame(rows)
+    if args.dry_run:
+        n = out["contracts"].sum()
+        rate = client.calls_per_min
+        print(f"\nfull run needs about {n} more calls"
+              + (f", ~{n / rate / 60:.1f} hours at {rate:g}/min" if rate > 0 else ""))
+        return
+    out["flag"] = out["z"] >= opt.Z_MIN
+    out.to_csv(ROOT / "data" / "cache" / "options_screen.csv", index=False)
+    pd.set_option("display.width", 200, "display.float_format", "{:+.2f}".format)
+    print(out.to_string(index=False))
+    for k in ("yes", "no"):
+        g = out[out.knowable == k]
+        if len(g):
+            print(f"knowable={k}: n={len(g)} mean z {g.z.mean():+.2f}  flags {g.flag.sum()}")
+
+
 def events(args):
     ret, ev = _data(args.refresh)
     ar, kept = _paths(ret, ev)
@@ -222,9 +273,15 @@ def main(argv=None):
     p = argparse.ArgumentParser(prog="uransig")
     sub = p.add_subparsers(dest="cmd", required=True)
     for name, fn in (("run", run), ("speed", speed_cmd), ("backtest", backtest_cmd),
-                     ("insider", insider_cmd), ("events", events)):
+                     ("insider", insider_cmd), ("options", options_cmd), ("events", events)):
         s = sub.add_parser(name)
         s.add_argument("--refresh", action="store_true", help="re-download prices")
+        if name == "options":
+            two_years = (pd.Timestamp.today() - pd.DateOffset(years=2)).date().isoformat()
+            s.add_argument("--since", default=two_years,
+                           help="earliest date the plan has data for (free tier: 2 years back)")
+            s.add_argument("--dry-run", action="store_true",
+                           help="list contracts only and estimate the full run")
         s.set_defaults(fn=fn)
     args = p.parse_args(argv)
     args.fn(args)

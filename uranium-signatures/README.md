@@ -24,7 +24,8 @@ This is research, not a trading signal.
 | 2. Speed | Half-lives; equities vs the physical trust vs monthly spot | Done |
 | 3. Sprott regime split | Did the trust's buying since 2021 change the signatures? | Skipped for now |
 | 4. Backtest | Is the drift tradeable, walk-forward, after costs? | Done: suggestive, not established |
-| 5. Informed-trading screen | Do prices and volume move before news that someone could have known first? | First pass done on daily data, with the [`market-surveillance/`](../market-surveillance) thresholds; options and intraday data next |
+| 5. Informed-trading screen | Do prices and volume move before news that someone could have known first? | First pass done on daily data, with the [`market-surveillance/`](../market-surveillance) thresholds |
+| 6. Options screen | Is there unusual short-dated, out-of-the-money options volume in the news direction before the news? | Pipeline built and tested; waiting for an API key |
 
 ## Results so far
 
@@ -88,6 +89,28 @@ several rows:
 For 17 events the time of day could not be pinned down (`unknown`), and 9 well-known events
 have no source link because it was not re-opened. The main window, days 0–1, absorbs a one-day
 timing error.
+
+## Options screen (stage 6)
+
+Informed traders favour options, so this stage looks at *directional* options volume
+before each event. Before bullish news that means calls struck up to 30% above spot, and
+before bearish news puts struck up to 30% below. Only contracts expiring within 60 days
+count. The ten sessions before the news are compared with the fifty before that. A z-score of
+2 or more is a flag. The screen runs on Cameco and URA options for every event, and on the
+directly affected stock where it has listed options. Events nobody could know first are the
+control. Company-specific events, where insiders certainly exist, are in
+[`data/company_events.csv`](data/company_events.csv), kept apart from the sector catalog.
+
+Data comes from [Massive](https://massive.com), formerly Polygon.io: daily bars for every US
+option contract, from the consolidated OPRA tape. The free tier (5 calls a minute) covers the
+last two years, which is 7 events here. The $79/month Developer tier covers four years (19
+events), and paid tiers have no call limit. To run it:
+
+```bash
+cp .env.example .env        # then paste your key into MASSIVE_API_KEY (.env is git-ignored)
+uv run python scripts/us.py options --dry-run   # lists contracts, estimates the full run
+uv run python scripts/us.py options             # full screen; responses cached in data/cache/massive/
+```
 
 ## Method, briefly
 
